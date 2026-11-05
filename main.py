@@ -1,3 +1,6 @@
+from roulette import roulette
+
+
 def garage(balance):
     while True:
         print(f"\nGarage Casino — Balance: ${balance}")
@@ -7,9 +10,11 @@ def garage(balance):
         print("4. Exit")
 
         choice = input("Choose a table or exit: ").strip()
-        tables = {"1": "Poker", "2": "Blackjack", "3": "Roulette"}
+        tables = {"1": "Poker", "2": "Blackjack"}
 
-        if choice in tables:
+        if choice == "3":
+            balance = roulette(balance)
+        elif choice in tables:
             print(f"\n{tables[choice]} — Placeholder")
             input("Press Enter to return to the garage...")
         elif choice == "4":

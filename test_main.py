@@ -20,12 +20,13 @@ class CasinoMenuSmokeTest(unittest.TestCase):
 
     def test_start_tables_return_with_balance_and_exit(self):
         output = self.run_game(
-            ["1", "1", "", "2", "", "3", "", "4"]
+            ["1", "1", "", "2", "", "3", "9", "4"]
         )
 
         self.assertIn("Garage Casino — Balance: $500", output)
-        for table in ("Poker", "Blackjack", "Roulette"):
+        for table in ("Poker", "Blackjack"):
             self.assertIn(f"{table} — Placeholder", output)
+        self.assertIn("Roulette Wagers", output)
         self.assertEqual(output.count("Garage Casino — Balance: $500"), 4)
         self.assertEqual(output.count("World's Smallest Casino"), 1)
         self.assertEqual(output.count("Goodbye!"), 1)
