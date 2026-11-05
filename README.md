@@ -4,9 +4,19 @@ A small text menu with a $500 starting balance and playable Poker, Blackjack, an
 
 ## Run
 
+Windowed version with buttons:
+
+```sh
+python3 gui.py
+```
+
+Text version in the terminal:
+
 ```sh
 python3 main.py
 ```
+
+On Windows, use `python` instead of `python3`.
 
 ## Test
 
@@ -29,3 +39,4 @@ python3 -m unittest
 - R14: Players may stand or discard up to three cards, and the dealer draws according to a simple pair/high-card strategy.
 - Update balance: after each completed round, winnings are added or losses subtracted and the new balance is shown.
 - Win the game: when the balance reaches $10,000 or more, play ends with a victory message.
+- GUI: `gui.py` plays all three tables in a window with buttons, clickable cards, and a roulette board, using the same rules and balance limits.
