@@ -24,6 +24,8 @@ def color(number):
 def ask_number(prompt, low, high):
     while True:
         choice = input(prompt).strip()
+        if choice == "":
+            return None
         if choice.isdigit() and low <= int(choice) <= high:
             return int(choice)
         print(f"Invalid choice. Please enter a number from {low} to {high}.")
@@ -45,12 +47,18 @@ def choose_wager():
         choice = input("Choose a wager: ").strip()
 
         if choice == "1":
-            number = ask_number("Pick a number (0-36): ", 0, 36)
+            number = ask_number("Pick a number (0-36, or press Enter to go back): ", 0, 36)
+            if number is None:
+                continue
             return (f"Number {number}", {number}, 35)
         elif choice in OUTSIDE_WAGERS:
             return OUTSIDE_WAGERS[choice]
         elif choice == "8":
-            dozen = ask_number("Pick a dozen (1 = 1-12, 2 = 13-24, 3 = 25-36): ", 1, 3)
+            dozen = ask_number(
+                "Pick a dozen (1 = 1-12, 2 = 13-24, 3 = 25-36, or press Enter to go back): ", 1, 3
+            )
+            if dozen is None:
+                continue
             start = (dozen - 1) * 12 + 1
             return (f"Dozen {start}-{start + 11}", set(range(start, start + 12)), 2)
         elif choice == "9":

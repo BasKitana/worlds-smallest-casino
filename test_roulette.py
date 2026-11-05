@@ -46,6 +46,18 @@ class ChooseWagerTest(unittest.TestCase):
 
         self.assertEqual(wager, ("Dozen 13-24", set(range(13, 25)), 2))
 
+    def test_blank_number_goes_back_to_wager_menu(self):
+        wager, output = self.choose(["1", "", "3"])
+
+        self.assertEqual(wager, ("Black", BLACK, 1))
+        self.assertEqual(output.count("Roulette Wagers"), 2)
+
+    def test_blank_dozen_goes_back_to_wager_menu(self):
+        wager, output = self.choose(["8", "", "9"])
+
+        self.assertIsNone(wager)
+        self.assertEqual(output.count("Roulette Wagers"), 2)
+
     def test_invalid_choice_then_return(self):
         wager, output = self.choose(["0", "9"])
 
