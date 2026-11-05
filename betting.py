@@ -1,9 +1,13 @@
-def bet_limits(balance):
+def bet_tier(balance):
     if balance >= 5000:
-        return 500, 2500
+        return 3
     if balance >= 2500:
-        return 100, 500
-    return 10, 100
+        return 2
+    return 1
+
+
+def bet_limits(balance):
+    return ((10, 100), (100, 500), (500, 2500))[bet_tier(balance) - 1]
 
 
 def validate_bet(amount, balance):

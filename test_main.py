@@ -1,7 +1,12 @@
+import io
 import subprocess
 import sys
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
+from unittest.mock import patch
+
+from main import garage
 
 
 ROOT = Path(__file__).resolve().parent
@@ -45,6 +50,22 @@ class CasinoMenuSmokeTest(unittest.TestCase):
         self.assertIn("Garage Casino — Balance: $500", output)
         self.assertEqual(output.count("World's Smallest Casino"), 1)
         self.assertEqual(output.count("Goodbye!"), 1)
+
+    def test_garage_displays_tier_changes_after_table_returns(self):
+        for table, table_choice in (("poker", "1"), ("roulette", "3")):
+            for start, result, message in (
+                (2499, 2500, "Tier up! Your balance moved to Tier 2."),
+                (2500, 2499, "Tier down. Your balance moved to Tier 1."),
+            ):
+                with self.subTest(table=table, start=start):
+                    output = io.StringIO()
+                    with patch("builtins.input", side_effect=[table_choice, "4"]), patch(
+                        f"main.{table}", return_value=result
+                    ), redirect_stdout(output):
+                        garage(start)
+
+                    self.assertIn(message, output.getvalue())
+                    self.assertIn(f"Garage Casino — Balance: ${result}", output.getvalue())
 
 
 if __name__ == "__main__":
