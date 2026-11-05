@@ -1,3 +1,4 @@
+from blackjack import blackjack
 from roulette import roulette
 
 
@@ -10,9 +11,11 @@ def garage(balance):
         print("4. Exit")
 
         choice = input("Choose a table or exit: ").strip()
-        tables = {"1": "Poker", "2": "Blackjack"}
+        tables = {"1": "Poker"}
 
-        if choice == "3":
+        if choice == "2":
+            balance = blackjack(balance)
+        elif choice == "3":
             balance = roulette(balance)
         elif choice in tables:
             print(f"\n{tables[choice]} — Placeholder")
