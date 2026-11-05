@@ -2,6 +2,13 @@ from blackjack import blackjack
 from poker import poker
 from roulette import roulette
 
+WINNING_BALANCE = 10_000
+
+
+def victory(balance):
+    print(f"\nCongratulations! You reached ${balance} and broke the bank!")
+    print("You win the game. Thanks for playing World's Smallest Casino!")
+
 
 def garage(balance):
     while True:
@@ -24,6 +31,11 @@ def garage(balance):
             return
         else:
             print("Invalid choice. Please select 1, 2, 3, or 4.")
+            continue
+
+        if balance >= WINNING_BALANCE:
+            victory(balance)
+            return
 
 
 def main():
