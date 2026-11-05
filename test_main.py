@@ -24,8 +24,8 @@ class CasinoMenuSmokeTest(unittest.TestCase):
         )
 
         self.assertIn("Garage Casino — Balance: $500", output)
-        for table in ("Poker", "Blackjack"):
-            self.assertIn(f"{table} — Placeholder", output)
+        self.assertIn("Poker — Five-Card Draw", output)
+        self.assertIn("Blackjack — Placeholder", output)
         self.assertIn("Roulette Wagers", output)
         self.assertEqual(output.count("Garage Casino — Balance: $500"), 4)
         self.assertEqual(output.count("World's Smallest Casino"), 1)
