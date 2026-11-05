@@ -38,7 +38,10 @@ class HandRankingTest(unittest.TestCase):
         )
 
     def test_category_ranks_and_tie_breakers(self):
-        self.assertGreater(rank_hand(cards([2, 2, 2, 3, 3])), rank_hand(cards([14, 14, 14, 14, 2])))
+        self.assertGreater(
+            rank_hand(cards([14, 11, 9, 6, 2], "♣♣♣♣♣")),
+            rank_hand(cards([2, 3, 4, 5, 6])),
+        )
         self.assertEqual(rank_hand(cards([13, 13, 8, 8, 2])), rank_hand(cards([13, 13, 8, 8, 2])))
 
 
@@ -58,7 +61,8 @@ class PokerRoundTest(unittest.TestCase):
     def test_round_displays_choices_and_updates_balance_on_win(self):
         player_hand = cards([10, 11, 12, 13, 14], "♠♠♠♠♠")
         dealer_hand = cards([2, 3, 4, 5, 7])
-        deck = list(reversed(player_hand + dealer_hand))
+        replacements = cards([8, 9, 10], "♣♦♥")
+        deck = list(reversed(player_hand + dealer_hand + replacements))
         output = io.StringIO()
         with patch("builtins.input", side_effect=["10", "", ""]), patch(
             "poker.create_deck", return_value=deck
