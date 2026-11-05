@@ -2,6 +2,9 @@ import subprocess
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
+
+import main
 
 
 ROOT = Path(__file__).resolve().parent
@@ -45,6 +48,36 @@ class CasinoMenuSmokeTest(unittest.TestCase):
         self.assertIn("Garage Casino — Balance: $500", output)
         self.assertEqual(output.count("World's Smallest Casino"), 1)
         self.assertEqual(output.count("Goodbye!"), 1)
+
+
+class GarageBalanceTest(unittest.TestCase):
+    def play_garage(self, table, results, inputs):
+        with patch.object(main, table, side_effect=results) as game, patch(
+            "builtins.input", side_effect=inputs
+        ), patch("builtins.print") as fake_print:
+            main.garage(500)
+        output = "\n".join(" ".join(map(str, call.args)) for call in fake_print.call_args_list)
+        return game, output
+
+    def test_garage_keeps_updated_balance_after_each_round(self):
+        game, output = self.play_garage("roulette", [600, 450], ["3", "3", "4"])
+
+        self.assertEqual([call.args for call in game.call_args_list], [(500,), (600,)])
+        self.assertIn("Garage Casino — Balance: $600", output)
+        self.assertIn("Garage Casino — Balance: $450", output)
+
+    def test_reaching_winning_balance_ends_play_with_victory(self):
+        game, output = self.play_garage("poker", [9_999, 10_000], ["1", "1"])
+
+        self.assertEqual(game.call_count, 2)
+        self.assertIn("You win the game", output)
+        self.assertIn("$10000", output)
+        self.assertNotIn("Goodbye!", output)
+
+    def test_balance_above_winning_threshold_also_wins(self):
+        _, output = self.play_garage("blackjack", [12_500], ["2"])
+
+        self.assertIn("You win the game", output)
 
 
 if __name__ == "__main__":

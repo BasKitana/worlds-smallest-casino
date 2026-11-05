@@ -27,3 +27,5 @@ python3 -m unittest
 - R12: Each spin picks a random number, pays out or takes the bet, and the garage keeps the new balance.
 - R13: Poker is five-card draw against a dealer, using standard five-card hand rankings and even-money win/loss payouts; ties return the bet.
 - R14: Players may stand or discard up to three cards, and the dealer draws according to a simple pair/high-card strategy.
+- Update balance: after each completed round, winnings are added or losses subtracted and the new balance is shown.
+- Win the game: when the balance reaches $10,000 or more, play ends with a victory message.
