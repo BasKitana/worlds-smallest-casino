@@ -3,10 +3,15 @@ import unittest
 from contextlib import redirect_stdout
 from unittest.mock import patch
 
-from betting import bet_limits, get_bet, validate_bet
+from betting import bet_limits, bet_tier, get_bet, validate_bet
 
 
 class BetLimitsTest(unittest.TestCase):
+    def test_identifies_tier_at_each_boundary(self):
+        for balance, expected in ((2499, 1), (2500, 2), (4999, 2), (5000, 3)):
+            with self.subTest(balance=balance):
+                self.assertEqual(bet_tier(balance), expected)
+
     def test_tier_boundaries(self):
         self.assertEqual(bet_limits(500), (10, 100))
         self.assertEqual(bet_limits(2499), (10, 100))
@@ -17,6 +22,17 @@ class BetLimitsTest(unittest.TestCase):
 
 
 class ValidateBetTest(unittest.TestCase):
+    def test_minimum_and_maximum_are_inclusive_at_tier_boundaries(self):
+        for balance, minimum, maximum in (
+            (2499, 10, 100),
+            (2500, 100, 500),
+            (4999, 100, 500),
+            (5000, 500, 2500),
+        ):
+            with self.subTest(balance=balance):
+                self.assertIsNone(validate_bet(minimum, balance))
+                self.assertIsNone(validate_bet(maximum, balance))
+
     def test_accepts_bets_within_limits(self):
         self.assertIsNone(validate_bet(10, 500))
         self.assertIsNone(validate_bet(100, 500))
