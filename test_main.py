@@ -53,10 +53,12 @@ class CasinoMenuSmokeTest(unittest.TestCase):
 
     def test_garage_displays_tier_changes_after_table_returns(self):
         for table, table_choice in (("poker", "1"), ("blackjack", "2"), ("roulette", "3")):
-            for start, result, message in (
-                (2499, 2500, "Tier up! Your balance moved to Tier 2."),
-                (2500, 2499, "Tier down. Your balance moved to Tier 1."),
-                (2500, 2600, None),
+            for start, result, tier, limits, message in (
+                (2499, 2500, 2, "$100-$500", "Tier up! Your balance moved to Tier 2."),
+                (2500, 2499, 1, "$10-$100", "Tier down. Your balance moved to Tier 1."),
+                (4999, 5000, 3, "$500-$2500", "Tier up! Your balance moved to Tier 3."),
+                (5000, 4999, 2, "$100-$500", "Tier down. Your balance moved to Tier 2."),
+                (2500, 2600, 2, "$100-$500", None),
             ):
                 with self.subTest(table=table, start=start, result=result):
                     output = io.StringIO()
@@ -65,12 +67,14 @@ class CasinoMenuSmokeTest(unittest.TestCase):
                     ), redirect_stdout(output):
                         main.garage(start)
 
+                    output = output.getvalue()
                     if message:
-                        self.assertIn(message, output.getvalue())
+                        self.assertIn(message, output)
                     else:
-                        self.assertNotIn("Tier up!", output.getvalue())
-                        self.assertNotIn("Tier down.", output.getvalue())
-                    self.assertIn(f"Garage Casino — Balance: ${result}", output.getvalue())
+                        self.assertNotIn("Tier up!", output)
+                        self.assertNotIn("Tier down.", output)
+                    self.assertIn(f"Garage Casino — Balance: ${result}", output)
+                    self.assertIn(f"Current tier: Tier {tier} — Bets: {limits}", output)
 
 
 class GarageBalanceTest(unittest.TestCase):

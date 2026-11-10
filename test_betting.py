@@ -33,6 +33,23 @@ class ValidateBetTest(unittest.TestCase):
                 self.assertIsNone(validate_bet(minimum, balance))
                 self.assertIsNone(validate_bet(maximum, balance))
 
+    def test_rejects_bets_just_outside_limits_at_each_tier_boundary(self):
+        for balance, minimum, maximum in (
+            (2499, 10, 100),
+            (2500, 100, 500),
+            (4999, 100, 500),
+            (5000, 500, 2500),
+        ):
+            with self.subTest(balance=balance):
+                self.assertEqual(
+                    validate_bet(minimum - 1, balance),
+                    f"The minimum bet is ${minimum}.",
+                )
+                self.assertEqual(
+                    validate_bet(maximum + 1, balance),
+                    f"The maximum bet is ${maximum}.",
+                )
+
     def test_accepts_bets_within_limits(self):
         self.assertIsNone(validate_bet(10, 500))
         self.assertIsNone(validate_bet(100, 500))
