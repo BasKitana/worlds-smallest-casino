@@ -128,11 +128,11 @@ def result_message(result, net, player, dealer):
 
 
 def blackjack(balance, deck=None):
-    """Play one round and return the new balance."""
+    """Play one round and return the new balance, or None if the player leaves the table."""
     print("\nBlackjack")
     bet = get_bet(balance)
     if bet is None:
-        return balance
+        return None
 
     if deck is None:
         deck = new_deck()
@@ -157,5 +157,4 @@ def blackjack(balance, deck=None):
 
     balance += net
     print(f"New balance: ${balance}")
-    input("Press Enter to return to the garage...")
     return balance

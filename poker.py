@@ -129,7 +129,7 @@ def poker(balance):
 
     bet = get_bet(balance)
     if bet is None:
-        return balance
+        return None
 
     deck = create_deck()
     random.shuffle(deck)
@@ -152,5 +152,4 @@ def poker(balance):
 
     balance += change
     print(f"New balance: ${balance}")
-    input("Press Enter to return to the garage...")
     return balance

@@ -83,11 +83,11 @@ def roulette(balance):
 
     wager = choose_wager()
     if wager is None:
-        return balance
+        return None
 
     bet = get_bet(balance)
     if bet is None:
-        return balance
+        return None
 
     number = spin()
     change = resolve(wager, bet, number)
@@ -100,5 +100,4 @@ def roulette(balance):
 
     balance += change
     print(f"New balance: ${balance}")
-    input("Press Enter to return to the garage...")
     return balance

@@ -94,7 +94,7 @@ class RouletteRoundTest(unittest.TestCase):
         return balance, output.getvalue()
 
     def test_winning_round(self):
-        balance, output = self.play(500, ["2", "100", ""], 3)
+        balance, output = self.play(500, ["2", "100"], 3)
 
         self.assertEqual(balance, 600)
         self.assertIn("The ball lands on 3 Red.", output)
@@ -102,21 +102,21 @@ class RouletteRoundTest(unittest.TestCase):
         self.assertIn("New balance: $600", output)
 
     def test_losing_round(self):
-        balance, output = self.play(500, ["1", "7", "50", ""], 8)
+        balance, output = self.play(500, ["1", "7", "50"], 8)
 
         self.assertEqual(balance, 450)
         self.assertIn("You bet $50 on Number 7.", output)
         self.assertIn("You lose $50.", output)
 
-    def test_return_before_betting_keeps_balance(self):
+    def test_return_before_betting_leaves_the_table(self):
         balance, _ = self.play(500, ["9"], 0)
 
-        self.assertEqual(balance, 500)
+        self.assertIsNone(balance)
 
-    def test_cancel_bet_keeps_balance(self):
+    def test_cancel_bet_leaves_the_table(self):
         balance, _ = self.play(500, ["2", ""], 0)
 
-        self.assertEqual(balance, 500)
+        self.assertIsNone(balance)
 
 
 if __name__ == "__main__":

@@ -64,7 +64,7 @@ class PokerRoundTest(unittest.TestCase):
         replacements = cards([8, 9, 10], "♣♦♥")
         deck = list(reversed(player_hand + dealer_hand + replacements))
         output = io.StringIO()
-        with patch("builtins.input", side_effect=["10", "", ""]), patch(
+        with patch("builtins.input", side_effect=["10", ""]), patch(
             "poker.create_deck", return_value=deck
         ), patch("poker.random.shuffle"), redirect_stdout(output):
             balance = poker(500)
@@ -74,11 +74,11 @@ class PokerRoundTest(unittest.TestCase):
         self.assertIn("You win $10!", output.getvalue())
         self.assertIn("New balance: $510", output.getvalue())
 
-    def test_cancelled_bet_keeps_balance(self):
+    def test_cancelled_bet_leaves_the_table(self):
         output = io.StringIO()
         with patch("builtins.input", return_value=""), redirect_stdout(output):
             balance = poker(500)
-        self.assertEqual(balance, 500)
+        self.assertIsNone(balance)
 
 
 if __name__ == "__main__":
