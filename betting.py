@@ -27,7 +27,7 @@ def get_bet(balance):
 
     while True:
         print(f"\nBalance: ${balance} — Bets: ${minimum}-${maximum}")
-        choice = input("Enter your bet (or press Enter to cancel): ").strip()
+        choice = input("Enter your bet (or press Enter to return to the garage): ").strip()
 
         if choice == "":
             return None

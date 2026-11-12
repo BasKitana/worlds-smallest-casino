@@ -29,3 +29,5 @@ python3 -m unittest
 - R14: Players may stand or discard up to three cards, and the dealer draws according to a simple pair/high-card strategy.
 - Update balance: after each completed round, winnings are added or losses subtracted and the new balance is shown.
 - Win the game: when the balance reaches $10,000 or more, play ends with a victory message.
+- R19: After a round, each table goes straight to the next bet. Pressing Enter at the bet prompt (or choosing Return on the roulette wager list) returns to the garage.
+- R20: Garage option 4, How to play, shows brief instructions for the chosen table, including its controls, payouts, and the current bet limits.

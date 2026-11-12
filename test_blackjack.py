@@ -94,8 +94,7 @@ class DetermineResultTest(unittest.TestCase):
 class PlayBlackjackTest(unittest.TestCase):
     def play(self, ranks, inputs, balance=500):
         output = io.StringIO()
-        # The trailing "" answers the prompt to return to the garage.
-        with patch("builtins.input", side_effect=[*inputs, ""]), redirect_stdout(output):
+        with patch("builtins.input", side_effect=inputs), redirect_stdout(output):
             new_balance = blackjack(balance, stacked_deck(*ranks))
         return new_balance - balance, output.getvalue()
 
@@ -170,16 +169,18 @@ class PlayBlackjackTest(unittest.TestCase):
         self.assertEqual(net, 50)
         self.assertIn("Invalid choice. Please enter h to hit or s to stand.", output)
 
-    def test_cancelling_the_bet_deals_nothing(self):
-        net, output = self.play([], [""])
+    def test_cancelling_the_bet_leaves_the_table_without_dealing(self):
+        output = io.StringIO()
+        with patch("builtins.input", side_effect=[""]), redirect_stdout(output):
+            result = blackjack(500, stacked_deck())
 
-        self.assertEqual(net, 0)
-        self.assertNotIn("Your cards", output)
+        self.assertIsNone(result)
+        self.assertNotIn("Your cards", output.getvalue())
 
-    def test_garage_keeps_the_new_balance(self):
+    def test_round_goes_straight_to_next_bet_and_garage_keeps_balance(self):
         output = io.StringIO()
         deck = stacked_deck("10", "10", "9", "8")
-        inputs = ["2", "50", "s", "", "4"]
+        inputs = ["2", "50", "s", "", "5"]
         with (
             patch("blackjack.new_deck", return_value=deck),
             patch("builtins.input", side_effect=inputs),
@@ -187,7 +188,10 @@ class PlayBlackjackTest(unittest.TestCase):
         ):
             garage(500)
 
-        self.assertIn("Garage Casino — Balance: $550", output.getvalue())
+        output = output.getvalue()
+        self.assertIn("New balance: $550\n\nBlackjack\n\nBalance: $550", output)
+        self.assertNotIn("Press Enter to return", output)
+        self.assertIn("Garage Casino — Balance: $550", output)
 
 
 if __name__ == "__main__":
