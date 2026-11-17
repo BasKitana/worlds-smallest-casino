@@ -237,7 +237,7 @@ class PlayBlackjackTest(PlainScreenTest):
         self.assertNotIn("You:", output.getvalue())
         self.assertEqual(screen.history, [])
 
-    def play_garage(self, decks, inputs):
+    def play_garage(self, decks, inputs, balance=500):
         # Integration check: enter Blackjack from the garage, play, leave, then exit.
         output = io.StringIO()
         with (
@@ -247,7 +247,7 @@ class PlayBlackjackTest(PlainScreenTest):
             patch("builtins.input", side_effect=inputs),
             redirect_stdout(output),
         ):
-            garage(500)
+            garage(balance)
         return output.getvalue()
 
     def test_round_goes_straight_to_next_bet_and_garage_keeps_balance(self):
@@ -276,6 +276,18 @@ class PlayBlackjackTest(PlainScreenTest):
             "    You: 10♠ 9♠ (19) | Dealer: 10♠ 8♠ (18)\n",
             output,
         )
+
+
+    def test_losing_the_last_dollar_shows_the_round_and_game_over(self):
+        # Start with $50, bet all of it, and lose (19 against the dealer's 20).
+        # The game-over screen still shows how the money was lost.
+        output = self.play_garage(
+            [stacked_deck("10", "10", "9", "K")], ["2", "50", "s"], balance=50
+        )
+
+        game_over = output.split("WORLD'S SMALLEST CASINO | Game over")[-1]
+        self.assertIn("  Round 1 · Blackjack: Dealer wins. You lose $50.", game_over)
+        self.assertIn("You lost every last dollar!", game_over)
 
 
 # Run this file's unittest cases when launched directly.

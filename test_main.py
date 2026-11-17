@@ -167,6 +167,34 @@ class GarageBalanceTest(PlainScreenTest):
         self.assertIn("You reached $10,000", output)
         self.assertNotIn("Goodbye!", output)
 
+    def test_losing_all_money_ends_with_game_over(self):
+        # One roulette round drops the balance to $0. The game-over screen is the last
+        # thing drawn: no garage menu afterward and no extra input needed.
+        game, output = self.play_garage("roulette", [0], ["3"])
+
+        self.assertEqual(game.call_count, 1)
+        self.assertIn("WORLD'S SMALLEST CASINO | Game over | $0 |", output)
+        self.assertIn("You lost every last dollar!", output)
+        self.assertIn("Maybe it's time to go to work?", output)
+        self.assertTrue(output.endswith("GAME OVER. Thanks for playing World's Smallest Casino!"))
+        self.assertNotIn(f"{GARAGE} | $0", output)
+        self.assertNotIn("Goodbye!", output)
+
+    def test_balance_below_minimum_bet_also_loses(self):
+        # $5 can't cover the $10 minimum bet, so the game ends instead of leaving the
+        # player stuck at a bet prompt that rejects everything.
+        _, output = self.play_garage("blackjack", [5], ["2"])
+
+        self.assertIn("You're down to $5. That won't even cover a $10 bet.", output)
+
+    def test_exactly_the_minimum_bet_keeps_playing(self):
+        # $10 still covers one minimum bet, so the table asks for another round.
+        game, output = self.play_garage("poker", [10, None], ["1", "5"])
+
+        self.assertEqual(game.call_count, 2)
+        self.assertNotIn("GAME OVER", output)
+        self.assertIn("Goodbye! You leave the casino with $10.", output)
+
     def test_balance_above_winning_threshold_also_wins(self):
         # A large win may skip past the target and must still count as victory.
         _, output = self.play_garage("blackjack", [12_500], ["2"])

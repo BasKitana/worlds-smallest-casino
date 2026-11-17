@@ -2,13 +2,17 @@
 # The garage keeps the balance in memory; closing the program does not save it.
 import screen
 from blackjack import blackjack
-from betting import bet_tier
+from betting import bet_limits, bet_tier
 from instructions import how_to_play
 from poker import poker
 from roulette import roulette
 
 # Underscores make numeric literals easier to read: 10_000 is the integer 10000.
 WINNING_BALANCE = 10_000
+# Below the smallest bet allowed ($10, Tier 1's minimum), the player can't bet at
+# all, so the game ends. This covers $0 and any leftover amount from $1 to $9.
+# bet_limits(0) returns Tier 1's (minimum, maximum); [0] picks the minimum.
+LOSING_BALANCE = bet_limits(0)[0]
 
 # The garage choices drawn as the body of the garage screen. The empty string
 # at the end adds a blank line before the input prompt.
@@ -34,6 +38,30 @@ def victory(balance):
     )
 
 
+def game_over(balance):
+    # Draw the losing screen. Like victory(), it is the last thing the garage draws
+    # before returning, so no other screen clears it away.
+    if balance == 0:
+        broke = "You lost every last dollar!"
+    else:
+        broke = (
+            f"You're down to {screen.money(balance)}. "
+            f"That won't even cover a {screen.money(LOSING_BALANCE)} bet."
+        )
+    screen.show(
+        "Game over",
+        balance,
+        [
+            broke,
+            "The garage door rattles shut behind you.",
+            "Your boss called. Twice. Maybe it's time to go to work?",
+            "",
+            # paint() colors these words red, like other losses.
+            screen.paint("GAME OVER. Thanks for playing World's Smallest Casino!", "lose"),
+        ],
+    )
+
+
 def goodbye(balance=None):
     # Clear the screen one last time; after Start, also show the money the player leaves with.
     screen.clear()
@@ -53,7 +81,7 @@ def notify_tier_change(previous_tier, balance):
 
 
 def play_table(game, balance):
-    """Play rounds back to back until the player leaves the table or wins."""
+    """Play rounds back to back until the player leaves the table, wins, or goes broke."""
     # game is the table's function itself (poker, blackjack, or roulette). Python
     # functions can be passed around like any other value and called later.
     while True:
@@ -66,8 +94,12 @@ def play_table(game, balance):
 
         balance = result
         notify_tier_change(previous_tier, balance)
-        # Stop at the winning balance; the garage then shows the victory screen.
+        # Stop at the winning or losing balance. Only stop here: the garage draws the
+        # victory or game-over screen, because anything drawn here would be cleared
+        # right away when the garage redraws its menu.
         if balance >= WINNING_BALANCE:
+            return balance
+        if balance < LOSING_BALANCE:
             return balance
 
 
@@ -102,6 +134,10 @@ def garage(balance):
         if balance >= WINNING_BALANCE:
             victory(balance)
             # Returning also lets main() finish, so victory ends the session.
+            return
+        # Too little money for any bet: show the game-over screen and end the session.
+        if balance < LOSING_BALANCE:
+            game_over(balance)
             return
 
 
