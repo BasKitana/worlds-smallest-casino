@@ -107,6 +107,7 @@ def cards_text(hand):
 def choose_discards(balance, bet, hand):
     # Read positions 1-5 from the player; return zero-based indexes for list access.
     while True:
+        # Redraw the bet and the numbered hand (with its current rank) before each try.
         screen.show(
             "Poker",
             balance,
@@ -133,6 +134,7 @@ def choose_discards(balance, bet, hand):
             and len({int(part) for part in parts}) == len(parts)
         ):
             return [int(part) - 1 for part in parts]
+        # The loop redraws the same hand with this message at the top.
         screen.notice("Invalid choice. Enter up to 3 different positions from 1 to 5.", "error")
 
 
@@ -173,6 +175,7 @@ def resolve(player_hand, dealer_hand, bet):
 def poker(balance):
     # Coordinate one complete round. Cancelling the bet returns None, which tells
     # the garage that the player left the table.
+    # The two body lines remind the player of the rules on the bet screen.
     bet = get_bet(
         balance,
         "Poker",
@@ -189,13 +192,17 @@ def poker(balance):
     random.shuffle(deck)
     player_hand = deal_hand(deck)
     dealer_hand = deal_hand(deck)
+    # The player chooses which cards to swap; the new cards come from the same deck.
     discards = choose_discards(balance, bet, player_hand)
     player_hand = draw_replacements(player_hand, deck, discards)
     # The dealer chooses discards automatically and reveals its hand after drawing.
     dealer_hand = draw_replacements(dealer_hand, deck, dealer_discards(dealer_hand))
 
+    # Name both hands for the recap, then settle the bet.
+    # The two names are assigned in one line: yours gets the first, theirs the second.
     yours, theirs = hand_name(player_hand), hand_name(dealer_hand)
     change = resolve(player_hand, dealer_hand, bet)
+    # Pick the sentence for the history, plus the kind that sets its color.
     if change > 0:
         outcome, kind = f"Your {yours} beats the dealer's {theirs}. You win ${change}!", "win"
     elif change < 0:

@@ -18,6 +18,8 @@ class BetLimitsTest(unittest.TestCase):
                 self.assertEqual(bet_tier(balance), expected)
 
     def test_tier_boundaries(self):
+        # Each tier's (minimum, maximum) pair, checked at the lowest and highest balance
+        # in that tier.
         self.assertEqual(bet_limits(500), (10, 100))
         self.assertEqual(bet_limits(2499), (10, 100))
         self.assertEqual(bet_limits(2500), (100, 500))
@@ -59,20 +61,24 @@ class ValidateBetTest(unittest.TestCase):
                 )
 
     def test_accepts_bets_within_limits(self):
+        # Bets exactly at a tier's limits, with a balance comfortably inside that tier.
         self.assertIsNone(validate_bet(10, 500))
         self.assertIsNone(validate_bet(100, 500))
         self.assertIsNone(validate_bet(500, 3000))
         self.assertIsNone(validate_bet(2500, 6000))
 
     def test_rejects_bet_below_minimum(self):
+        # One dollar under the minimum, in Tier 1 and in Tier 2.
         self.assertEqual(validate_bet(9, 500), "The minimum bet is $10.")
         self.assertEqual(validate_bet(99, 3000), "The minimum bet is $100.")
 
     def test_rejects_bet_above_maximum(self):
+        # One dollar over the maximum, in Tier 1 and in Tier 3.
         self.assertEqual(validate_bet(101, 500), "The maximum bet is $100.")
         self.assertEqual(validate_bet(2501, 6000), "The maximum bet is $2500.")
 
     def test_rejects_bet_greater_than_balance(self):
+        # $50 is within Tier 1's limits but more than the $40 the player has.
         self.assertEqual(
             validate_bet(50, 40), "You only have $40. You cannot bet $50."
         )
@@ -96,6 +102,7 @@ class GetBetTest(PlainScreenTest):
         self.assertIn("Please enter a whole dollar amount.", output)
         self.assertIn("Bet rejected. The minimum bet is $10.", output)
         self.assertIn("Bet rejected. The maximum bet is $100.", output)
+        # Each try redraws the bet screen: 3 rejected tries plus the accepted one.
         self.assertEqual(output.count("WORLD'S SMALLEST CASINO"), 4)
 
     def test_shows_current_tier_limits(self):
@@ -105,6 +112,7 @@ class GetBetTest(PlainScreenTest):
         self.assertIn("| $3,000 | Tier 2: $100-$500", output)
 
     def test_blank_input_cancels(self):
+        # Pressing Enter on an empty line returns None, meaning "leave the table".
         amount, _ = self.run_get_bet(500, [""])
 
         self.assertIsNone(amount)

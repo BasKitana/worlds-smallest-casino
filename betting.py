@@ -31,7 +31,10 @@ def validate_bet(amount, balance):
 
 def get_bet(balance, location="Table", body=()):
     """Redraw the bet screen until the player enters a valid bet or leaves (None)."""
+    # location names the table in the status line; body is the table's own lines,
+    # such as its rules or the chosen roulette wager.
     while True:
+        # [*body, ""] copies the body lines and adds a blank line before the prompt.
         screen.show(location, balance, [*body, ""] if body else (), at_table=True)
         choice = input("Enter your bet (or press Enter to return to the garage): ").strip()
 
@@ -47,6 +50,8 @@ def get_bet(balance, location="Table", body=()):
         error = validate_bet(amount, balance)
         if error:
             # A nonempty error string is true in an if statement; None is false.
+            # The loop then redraws the bet screen with this message at the top.
             screen.notice(f"Bet rejected. {error}", "error")
         else:
+            # A valid bet ends the loop and goes back to the table that asked for it.
             return amount

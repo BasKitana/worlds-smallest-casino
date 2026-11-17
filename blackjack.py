@@ -82,7 +82,9 @@ def table_lines(bet, player, dealer):
 
 def player_turn(deck, player, dealer, balance, bet):
     """Redraw the table and let the player hit until they stand, bust, or reach 21."""
+    # At 21 or more there is nothing left to decide, so the loop stops by itself.
     while hand_value(player) < 21:
+        # Redraw the whole table before every decision so the newest card is visible.
         screen.show("Blackjack", balance, table_lines(bet, player, dealer), at_table=True)
         choice = input("Hit or stand? (h/s): ").strip().lower()
 
@@ -92,6 +94,7 @@ def player_turn(deck, player, dealer, balance, bet):
         elif choice in ("s", "stand"):
             return
         else:
+            # Nothing changes; the table is redrawn with this message at the top.
             screen.notice("Invalid choice. Please enter h to hit or s to stand.", "error")
 
 
@@ -99,6 +102,7 @@ def dealer_turn(deck, dealer):
     """The dealer draws on 16 or less and stands on 17 or more, including soft 17."""
     # Soft 17 is a total of 17 that includes an ace still counted as 11.
     while hand_value(dealer) < 17:
+        # No screen is drawn here: the dealer's final hand appears in the round recap.
         dealer.append(deck.pop())
 
 
@@ -163,6 +167,7 @@ def blackjack(balance, deck=None):
     if deck is None:
         deck = new_deck()
 
+    # Each hand is a list that player_turn() and dealer_turn() add cards to.
     player, dealer = deal_initial_cards(deck)
     # A natural on either side settles the round without any hit/stand decisions.
     has_natural = is_blackjack(player) or is_blackjack(dealer)

@@ -10,6 +10,8 @@ from roulette import roulette
 # Underscores make numeric literals easier to read: 10_000 is the integer 10000.
 WINNING_BALANCE = 10_000
 
+# The garage choices drawn as the body of the garage screen. The empty string
+# at the end adds a blank line before the input prompt.
 GARAGE_MENU = [
     "1. Poker",
     "2. Blackjack",
@@ -52,14 +54,19 @@ def notify_tier_change(previous_tier, balance):
 
 def play_table(game, balance):
     """Play rounds back to back until the player leaves the table or wins."""
+    # game is the table's function itself (poker, blackjack, or roulette). Python
+    # functions can be passed around like any other value and called later.
     while True:
+        # Remember the tier before the round so a change can be announced after it.
         previous_tier = bet_tier(balance)
         result = game(balance)
+        # None means the player cancelled, so no round was played: back to the garage.
         if result is None:
             return balance
 
         balance = result
         notify_tier_change(previous_tier, balance)
+        # Stop at the winning balance; the garage then shows the victory screen.
         if balance >= WINNING_BALANCE:
             return balance
 
@@ -73,12 +80,14 @@ def garage(balance):
 
         # input() returns text; strip() removes surrounding spaces before comparison.
         choice = input("Choose a table or option: ").strip()
+        # Map each menu choice to its table's function; play_table() calls the one chosen.
         tables = {"1": poker, "2": blackjack, "3": roulette}
         if choice in tables:
             # Assigning the returned balance carries the results into future rounds.
             balance = play_table(tables[choice], balance)
         elif choice == "4":
             how_to_play(balance)
+            # Reading instructions can't change the balance, so skip the victory check.
             continue
         elif choice == "5":
             goodbye(balance)
@@ -99,6 +108,7 @@ def garage(balance):
 def main():
     # Invalid choices repeat the start menu; starting creates a fresh $500 session.
     while True:
+        # No balance is shown yet; body= names the argument so balance can be skipped.
         screen.show("Main menu", body=["1. Start", "2. Exit", ""])
         choice = input("Choose an option: ").strip()
 
@@ -110,6 +120,7 @@ def main():
             goodbye()
             return
         else:
+            # The loop redraws the start menu with this message at the top.
             screen.notice("Invalid choice. Please select 1 or 2.", "error")
 
 

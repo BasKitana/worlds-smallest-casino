@@ -20,6 +20,8 @@ OUTSIDE_WAGERS = {
     "7": ("High (19-36)", set(range(19, 37)), 1),
 }
 
+# The wager list drawn as the body of the wager screen; the choices match
+# OUTSIDE_WAGERS above plus the single-number and dozen options.
 WAGER_MENU = [
     "Roulette Wagers",
     "1. Single number (pays 35 to 1)",
@@ -45,17 +47,20 @@ def color(number):
 def ask_number(prompt, low, high, balance=None, title=""):
     # Retry until an integer falls within both inclusive bounds; blank means back.
     while True:
+        # title names the wager being chosen, such as "Dozen (pays 2 to 1)".
         screen.show("Roulette", balance, [title, ""] if title else (), at_table=True)
         choice = input(prompt).strip()
         if choice == "":
             return None
         if choice.isdigit() and low <= int(choice) <= high:
             return int(choice)
+        # The loop redraws this screen with the message at the top.
         screen.notice(f"Invalid choice. Please enter a number from {low} to {high}.", "error")
 
 
 def choose_wager(balance=None):
     # Return a wager tuple, or None when the player chooses to leave the table.
+    # balance is optional so tests can call choose_wager() on its own.
     while True:
         screen.show("Roulette", balance, WAGER_MENU, at_table=True)
         choice = input("Choose a wager: ").strip()
@@ -90,6 +95,7 @@ def choose_wager(balance=None):
         elif choice == "9":
             return None
         else:
+            # The loop redraws the wager list with this message at the top.
             screen.notice("Invalid choice. Please select 1 through 9.", "error")
 
 
@@ -114,6 +120,8 @@ def roulette(balance):
     if wager is None:
         return None
 
+    # Unpack the wager tuple; _ skips the set of winning numbers, which isn't needed here.
+    # The bet screen then reminds the player which wager they chose.
     name, _, payout = wager
     bet = get_bet(balance, "Roulette", [f"Wager: {name} (pays {payout} to 1)"])
     if bet is None:
@@ -121,6 +129,7 @@ def roulette(balance):
 
     number = spin()
     change = resolve(wager, bet, number)
+    # Build the history sentence: where the ball landed, then the win or loss.
     landed = f"The ball lands on {number} {color(number)}."
     if change > 0:
         outcome, kind = f"{landed} You win ${change}!", "win"

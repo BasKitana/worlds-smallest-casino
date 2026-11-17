@@ -37,6 +37,7 @@ TABLE_INSTRUCTIONS = {
     ),
 }
 
+# The How to Play choices, drawn below any instructions already chosen.
 MENU = [
     "Choose a table to learn about:",
     "1. Poker",
@@ -68,13 +69,16 @@ def how_to_play(balance):
     # Remember the chosen table so its instructions stay above the menu on each redraw.
     selected = None
     while True:
+        # Before a table is chosen, only the menu is shown.
         body = table_instructions(selected, balance) if selected else []
+        # Adding two lists (+) joins them into one: instructions first, then the menu.
         screen.show("How to Play", balance, body + MENU)
 
         choice = input("Choose an option: ").strip()
         if choice in TABLE_INSTRUCTIONS:
             selected = choice
         elif choice in ("4", ""):
+            # Choosing 4 or pressing Enter goes back to the garage.
             return
         else:
             screen.notice("Invalid choice. Please select 1, 2, 3, or 4.", "error")

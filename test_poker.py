@@ -19,6 +19,7 @@ def cards(ranks, suits="♣♦♥♠♣"):
 class HandRankingTest(unittest.TestCase):
     # Call scoring directly so shuffled deals and user choices cannot affect results.
     def test_all_hand_categories(self):
+        # One example hand per category, from weakest to strongest.
         examples = [
             (cards([14, 13, 12, 11, 9]), "high card"),
             (cards([14, 14, 12, 9, 7]), "one pair"),
@@ -65,6 +66,7 @@ class PokerRoundTest(PlainScreenTest):
         self.assertEqual(dealer_discards(cards([14, 11, 9, 6, 2])), [2, 3, 4])
 
     def test_resolve_win_loss_and_tie(self):
+        # resolve() returns the balance change: +bet for a win, -bet for a loss, 0 for a tie.
         strong = cards([10, 11, 12, 13, 14], "♠♠♠♠♠")
         weaker = cards([2, 3, 4, 5, 7])
         self.assertEqual(resolve(strong, weaker, 25), 25)

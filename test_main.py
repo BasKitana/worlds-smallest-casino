@@ -17,6 +17,7 @@ from test_screen import PlainScreenTest
 ROOT = Path(__file__).resolve().parent
 
 
+# The start of the garage's status line, shared by many assertions below.
 GARAGE = "WORLD'S SMALLEST CASINO | Garage"
 
 
@@ -38,6 +39,7 @@ def run_game(inputs, raw=False):
 class CasinoMenuSmokeTest(PlainScreenTest):
     # Smoke tests exercise the real command-line program as a separate process.
     def run_game(self, inputs):
+        # Kept as a method so the tests below can call self.run_game().
         return run_game(inputs)
 
     def test_start_tables_return_with_balance_and_exit(self):
@@ -57,6 +59,8 @@ class CasinoMenuSmokeTest(PlainScreenTest):
         self.assertIn("Goodbye! You leave the casino with $500.", output)
 
     def test_every_screen_clears_the_terminal(self):
+        # Start, open How to Play, read Blackjack's instructions, go back, and exit.
+        # raw=True keeps the ANSI codes so the clears themselves can be counted.
         raw = run_game(["1", "4", "2", "4", "5"], raw=True)
 
         # Main menu, garage, two How to Play screens, garage, then the goodbye screen.
@@ -65,12 +69,15 @@ class CasinoMenuSmokeTest(PlainScreenTest):
         self.assertTrue(raw.endswith(screen.CLEAR_CODE + "Goodbye! You leave the casino with $500.\n"))
 
     def test_invalid_input_and_root_exit(self):
+        # An unknown choice at the start menu shows an error, then 2 exits.
         output = self.run_game(["invalid", "2"])
 
         self.assertIn("Invalid choice. Please select 1 or 2.", output)
         self.assertIn("Goodbye!", output)
 
     def test_invalid_input_and_garage_exit(self):
+        # Start, type an unknown choice in the garage, then exit. The garage is drawn
+        # twice: once before the error and once with it.
         output = self.run_game(["1", "invalid", "5"])
 
         self.assertIn("> Invalid choice. Please select 1, 2, 3, 4, or 5.", output)
@@ -136,12 +143,16 @@ class GarageBalanceTest(PlainScreenTest):
         self.assertIn(f"{GARAGE} | $450", output)
 
     def test_leaving_a_table_without_playing_keeps_balance(self):
+        # Enter Blackjack but leave at once (None), so no round is played and the garage
+        # is drawn again at $500.
         game, output = self.play_garage("blackjack", [None], ["2", "5"])
 
         self.assertEqual(game.call_count, 1)
         self.assertEqual(output.count(f"{GARAGE} | $500"), 2)
 
     def test_tier_change_is_shown_between_rounds_at_the_table(self):
+        # Round 1 reaches $2,500 (Tier 2) and round 2 stays in Tier 2, so the message
+        # appears once, between rounds, without returning to the garage.
         game, output = self.play_garage("roulette", [2_500, 2_600, None], ["3", "5"])
 
         self.assertEqual(game.call_count, 3)
@@ -166,12 +177,15 @@ class GarageBalanceTest(PlainScreenTest):
 class HowToPlayTest(PlainScreenTest):
     # Open How to Play from the garage and check the instructions for each table.
     def run_menu(self, inputs, balance=500):
+        # Run the garage with scripted choices and return everything it printed.
         output = io.StringIO()
         with patch("builtins.input", side_effect=inputs), redirect_stdout(output):
             main.garage(balance)
         return output.getvalue()
 
     def test_shows_instructions_for_each_selected_table(self):
+        # Open How to Play, view all three tables, go back, then exit. Every table's
+        # instructions end with the same betting reminders, so that line appears 3 times.
         output = self.run_menu(["4", "1", "2", "3", "4", "5"])
 
         self.assertIn("Poker — Five-Card Draw\n- Make a better five-card poker hand", output)
@@ -182,11 +196,13 @@ class HowToPlayTest(PlainScreenTest):
         self.assertEqual(output.count("Goodbye!"), 1)
 
     def test_betting_info_uses_current_tier(self):
+        # At $3,000 the reminders use Tier 2's limits. A blank entry leaves How to Play.
         output = self.run_menu(["4", "2", "", "5"], balance=3000)
 
         self.assertIn("Your balance of $3000 is Tier 2: bets from $100 to $500.", output)
 
     def test_invalid_choice_and_blank_return(self):
+        # x is rejected, which redraws How to Play once more; Enter then goes back.
         output = self.run_menu(["4", "x", "", "5"])
 
         self.assertIn("> Invalid choice. Please select 1, 2, 3, or 4.", output)
@@ -194,6 +210,7 @@ class HowToPlayTest(PlainScreenTest):
         self.assertEqual(output.count("Goodbye!"), 1)
 
     def test_how_to_play_from_the_real_game(self):
+        # The same menu in the real program, as started with python3 main.py.
         output = run_game(["1", "4", "2", "4", "5"])
 
         self.assertIn("| How to Play |", output)

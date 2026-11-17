@@ -19,6 +19,7 @@ class WheelTest(unittest.TestCase):
         self.assertEqual(RED | BLACK, set(range(1, 37)))
 
     def test_colors(self):
+        # 0 is the green pocket; 1 is red and 2 is black on a European wheel.
         self.assertEqual(color(0), "Green")
         self.assertEqual(color(1), "Red")
         self.assertEqual(color(2), "Black")
@@ -35,6 +36,7 @@ class ChooseWagerTest(PlainScreenTest):
         return wager, output.getvalue()
 
     def test_single_number(self):
+        # Option 1, then 17: a single-number wager that pays 35 to 1.
         wager, _ = self.choose(["1", "17"])
 
         self.assertEqual(wager, ("Number 17", {17}, 35))
@@ -47,6 +49,7 @@ class ChooseWagerTest(PlainScreenTest):
         self.assertIn("Please enter a number from 0 to 36.", output)
 
     def test_outside_wager(self):
+        # Option 2 returns the preset Red wager at once, with no follow-up question.
         wager, _ = self.choose(["2"])
 
         self.assertEqual(wager, ("Red", RED, 1))
@@ -65,12 +68,14 @@ class ChooseWagerTest(PlainScreenTest):
         self.assertEqual(output.count("Roulette Wagers"), 2)
 
     def test_blank_dozen_goes_back_to_wager_menu(self):
+        # Cancel the dozen prompt, then choose 9 to leave from the redrawn wager list.
         wager, output = self.choose(["8", "", "9"])
 
         self.assertIsNone(wager)
         self.assertEqual(output.count("Roulette Wagers"), 2)
 
     def test_invalid_choice_then_return(self):
+        # 0 is not on the wager list, so it is rejected before 9 leaves the table.
         wager, output = self.choose(["0", "9"])
 
         self.assertIsNone(wager)
@@ -80,14 +85,17 @@ class ChooseWagerTest(PlainScreenTest):
 class ResolveTest(unittest.TestCase):
     # Wagers use (label, winning-number set, multiplier); payouts are net changes.
     def test_single_number_pays_35_to_1(self):
+        # A $10 bet on 17: landing on 17 wins $350, and any other number loses the $10.
         self.assertEqual(resolve(("Number 17", {17}, 35), 10, 17), 350)
         self.assertEqual(resolve(("Number 17", {17}, 35), 10, 18), -10)
 
     def test_even_money_wagers(self):
+        # 1 is red and 2 is black, so a $50 bet on red wins once and loses once.
         self.assertEqual(resolve(("Red", RED, 1), 50, 1), 50)
         self.assertEqual(resolve(("Red", RED, 1), 50, 2), -50)
 
     def test_dozen_pays_2_to_1(self):
+        # 12 is in the first dozen (1-12), but 13 is not.
         wager = ("Dozen 1-12", set(range(1, 13)), 2)
         self.assertEqual(resolve(wager, 100, 12), 200)
         self.assertEqual(resolve(wager, 100, 13), -100)
@@ -131,12 +139,14 @@ class RouletteRoundTest(PlainScreenTest):
         self.assertEqual(latest["kind"], "lose")
 
     def test_return_before_betting_leaves_the_table(self):
+        # Choosing 9 leaves before betting, so nothing is spun or recorded.
         balance, _ = self.play(500, ["9"], 0)
 
         self.assertIsNone(balance)
         self.assertEqual(screen.history, [])
 
     def test_cancel_bet_leaves_the_table(self):
+        # Choose Red, then press Enter at the bet prompt to leave.
         balance, _ = self.play(500, ["2", ""], 0)
 
         self.assertIsNone(balance)
