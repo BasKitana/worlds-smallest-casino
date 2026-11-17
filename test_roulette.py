@@ -1,3 +1,5 @@
+# Roulette tests check the wheel, wager selection, payouts, and complete spins.
+# Tests supply keyboard responses and fixed spin results to avoid randomness.
 import io
 import unittest
 from contextlib import redirect_stdout
@@ -9,9 +11,11 @@ from test_screen import PlainScreenTest
 
 
 class WheelTest(unittest.TestCase):
+    # The 36 nonzero numbers must split into 18 red and 18 black pockets.
     def test_red_and_black_split_one_to_thirty_six(self):
         self.assertEqual(len(RED), 18)
         self.assertEqual(len(BLACK), 18)
+        # | takes the set union: together the colors must cover every number 1-36.
         self.assertEqual(RED | BLACK, set(range(1, 37)))
 
     def test_colors(self):
@@ -21,7 +25,10 @@ class WheelTest(unittest.TestCase):
 
 
 class ChooseWagerTest(PlainScreenTest):
+    # Check menu input independently from bets and wheel outcomes.
     def choose(self, inputs):
+        # Feed a response per input() call and capture printed prompts/messages.
+        # The with block restores normal input and stdout when it finishes.
         output = io.StringIO()
         with patch("builtins.input", side_effect=inputs), redirect_stdout(output):
             wager = choose_wager()
@@ -33,6 +40,7 @@ class ChooseWagerTest(PlainScreenTest):
         self.assertEqual(wager, ("Number 17", {17}, 35))
 
     def test_single_number_rejects_out_of_range(self):
+        # Select a number bet, reject 37 and text, then accept the valid edge value 0.
         wager, output = self.choose(["1", "37", "abc", "0"])
 
         self.assertEqual(wager, ("Number 0", {0}, 35))
@@ -44,11 +52,13 @@ class ChooseWagerTest(PlainScreenTest):
         self.assertEqual(wager, ("Red", RED, 1))
 
     def test_dozen(self):
+        # Menu option 8, then dozen 2: range(13, 25) includes 13 through 24.
         wager, _ = self.choose(["8", "2"])
 
         self.assertEqual(wager, ("Dozen 13-24", set(range(13, 25)), 2))
 
     def test_blank_number_goes_back_to_wager_menu(self):
+        # Cancel the number prompt, then choose Black from the redisplayed menu.
         wager, output = self.choose(["1", "", "3"])
 
         self.assertEqual(wager, ("Black", BLACK, 1))
@@ -68,6 +78,7 @@ class ChooseWagerTest(PlainScreenTest):
 
 
 class ResolveTest(unittest.TestCase):
+    # Wagers use (label, winning-number set, multiplier); payouts are net changes.
     def test_single_number_pays_35_to_1(self):
         self.assertEqual(resolve(("Number 17", {17}, 35), 10, 17), 350)
         self.assertEqual(resolve(("Number 17", {17}, 35), 10, 18), -10)
@@ -82,12 +93,15 @@ class ResolveTest(unittest.TestCase):
         self.assertEqual(resolve(wager, 100, 13), -100)
 
     def test_zero_loses_outside_wagers(self):
+        # Green zero belongs to neither red nor black, so both tested bets lose.
         for wager in (("Red", RED, 1), ("Black", BLACK, 1)):
             self.assertEqual(resolve(wager, 20, 0), -20)
 
 
 class RouletteRoundTest(PlainScreenTest):
+    # Combine menu selection, betting, settlement, and the recorded round result.
     def play(self, balance, inputs, number):
+        # Replace spin() with a fixed number while the rest of the round runs normally.
         output = io.StringIO()
         with patch("builtins.input", side_effect=inputs), patch(
             "roulette.spin", return_value=number
@@ -96,6 +110,7 @@ class RouletteRoundTest(PlainScreenTest):
         return balance, output.getvalue()
 
     def test_winning_round(self):
+        # Choose Red and bet $100, with the wheel forced to land on 3 (red).
         balance, output = self.play(500, ["2", "100"], 3)
 
         self.assertEqual(balance, 600)
@@ -106,6 +121,7 @@ class RouletteRoundTest(PlainScreenTest):
         self.assertEqual(latest["kind"], "win")
 
     def test_losing_round(self):
+        # Bet $50 on number 7, but force the wheel to land on 8.
         balance, output = self.play(500, ["1", "7", "50"], 8)
 
         self.assertEqual(balance, 450)
@@ -126,5 +142,6 @@ class RouletteRoundTest(PlainScreenTest):
         self.assertIsNone(balance)
 
 
+# Run this file's unittest cases when launched directly.
 if __name__ == "__main__":
     unittest.main()

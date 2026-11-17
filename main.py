@@ -1,3 +1,5 @@
+# Entry point: the start menu opens the garage, which routes players to each game.
+# The garage keeps the balance in memory; closing the program does not save it.
 import screen
 from blackjack import blackjack
 from betting import bet_tier
@@ -5,6 +7,7 @@ from instructions import how_to_play
 from poker import poker
 from roulette import roulette
 
+# Underscores make numeric literals easier to read: 10_000 is the integer 10000.
 WINNING_BALANCE = 10_000
 
 GARAGE_MENU = [
@@ -18,6 +21,7 @@ GARAGE_MENU = [
 
 
 def victory(balance):
+    # Draw the end-of-game screen once the player reaches or exceeds the target.
     screen.show(
         "You win!",
         balance,
@@ -29,6 +33,7 @@ def victory(balance):
 
 
 def goodbye(balance=None):
+    # Clear the screen one last time; after Start, also show the money the player leaves with.
     screen.clear()
     if balance is None:
         print("Goodbye!")
@@ -37,6 +42,7 @@ def goodbye(balance=None):
 
 
 def notify_tier_change(previous_tier, balance):
+    # Compare tiers before and after a round; queue a message only if the tier changed.
     tier = bet_tier(balance)
     if tier > previous_tier:
         screen.notice(f"Tier up! Your balance moved to Tier {tier}.", "tier")
@@ -59,36 +65,46 @@ def play_table(game, balance):
 
 
 def garage(balance):
+    # A new game starts with no round history. Each visit to a table plays rounds
+    # until the player leaves, then returns the balance for the next menu visit.
     screen.reset()
     while True:
         screen.show("Garage", balance, GARAGE_MENU)
 
+        # input() returns text; strip() removes surrounding spaces before comparison.
         choice = input("Choose a table or option: ").strip()
         tables = {"1": poker, "2": blackjack, "3": roulette}
         if choice in tables:
+            # Assigning the returned balance carries the results into future rounds.
             balance = play_table(tables[choice], balance)
         elif choice == "4":
             how_to_play(balance)
             continue
         elif choice == "5":
             goodbye(balance)
+            # return leaves this function, ending the garage's otherwise endless loop.
             return
         else:
             screen.notice("Invalid choice. Please select 1, 2, 3, 4, or 5.", "error")
+            # Redraw the menu immediately; no table has returned a new balance.
             continue
 
+        # Check after returning from any table; reaching or passing the target wins.
         if balance >= WINNING_BALANCE:
             victory(balance)
+            # Returning also lets main() finish, so victory ends the session.
             return
 
 
 def main():
+    # Invalid choices repeat the start menu; starting creates a fresh $500 session.
     while True:
         screen.show("Main menu", body=["1. Start", "2. Exit", ""])
         choice = input("Choose an option: ").strip()
 
         if choice == "1":
             garage(500)
+            # Once the garage exits, finish instead of showing the start menu again.
             return
         elif choice == "2":
             goodbye()
@@ -97,5 +113,6 @@ def main():
             screen.notice("Invalid choice. Please select 1 or 2.", "error")
 
 
+# Run the menu only when launched directly, not when tests import this module.
 if __name__ == "__main__":
     main()

@@ -1,3 +1,5 @@
+# Blackjack tests cover deck construction, scoring, payouts, and complete rounds.
+# Fixed cards and scripted input make the results repeatable without real players.
 import io
 import unittest
 from contextlib import redirect_stdout
@@ -23,19 +25,24 @@ from test_screen import PlainScreenTest
 
 
 def hand(*ranks):
+    # *ranks collects arguments into a tuple. Suits do not affect Blackjack scoring,
+    # so these small test fixtures use spades for every requested rank.
     return [(rank, "♠") for rank in ranks]
 
 
 def stacked_deck(*ranks):
     """Build a deck that deals the given ranks in order."""
+    # Reverse the fixture because the game draws from the end with pop().
     return list(reversed(hand(*ranks)))
 
 
 class DealTest(unittest.TestCase):
+    # Verify the real deck is unique and dealing alternates player/dealer correctly.
     def test_new_deck_has_52_unique_cards(self):
         deck = new_deck()
 
         self.assertEqual(len(deck), 52)
+        # A set removes duplicates; its size should still be 52.
         self.assertEqual(len(set(deck)), 52)
 
     def test_deals_two_cards_each_alternating_from_player(self):
@@ -49,11 +56,13 @@ class DealTest(unittest.TestCase):
 
 
 class HandValueTest(unittest.TestCase):
+    # Isolate card values, flexible aces, natural blackjacks, and display formatting.
     def test_number_and_face_cards(self):
         self.assertEqual(hand_value(hand("2", "10")), 12)
         self.assertEqual(hand_value(hand("J", "Q", "K")), 30)
 
     def test_ace_counts_as_eleven_or_one(self):
+        # Include multiple aces and a hand that still busts after both become 1.
         self.assertEqual(hand_value(hand("A", "6")), 17)
         self.assertEqual(hand_value(hand("A", "6", "10")), 17)
         self.assertEqual(hand_value(hand("A", "A")), 12)
@@ -69,7 +78,10 @@ class HandValueTest(unittest.TestCase):
 
 
 class DetermineResultTest(unittest.TestCase):
+    # Check winner selection separately from the amount added to the balance.
     def test_results(self):
+        # Each row is (player hand, dealer hand, expected result). Cases include
+        # both busting, both naturals, a natural versus drawn 21, and ordinary totals.
         cases = [
             (hand("K", "Q", "2"), hand("K", "2"), LOSE),
             (hand("K", "Q", "2"), hand("K", "Q", "5"), LOSE),
@@ -86,6 +98,7 @@ class DetermineResultTest(unittest.TestCase):
                 self.assertEqual(determine_result(player, dealer), expected)
 
     def test_net_winnings(self):
+        # The odd $15 bet verifies that the 3:2 bonus rounds down to $22.
         self.assertEqual(net_winnings(BLACKJACK, 100), 150)
         self.assertEqual(net_winnings(BLACKJACK, 15), 22)
         self.assertEqual(net_winnings(WIN, 100), 100)
@@ -94,10 +107,13 @@ class DetermineResultTest(unittest.TestCase):
 
 
 class PlayBlackjackTest(PlainScreenTest):
+    # Exercise complete rounds, checking balance changes and the recorded round results.
     def play(self, ranks, inputs, balance=500):
+        # Capture print() output; supply a fixed deck and one input value per prompt.
         output = io.StringIO()
         with patch("builtins.input", side_effect=inputs), redirect_stdout(output):
             new_balance = blackjack(balance, stacked_deck(*ranks))
+        # Return net profit/loss so each test can focus on the outcome of its round.
         return new_balance - balance, output.getvalue()
 
     def latest(self):
@@ -107,6 +123,7 @@ class PlayBlackjackTest(PlainScreenTest):
     def test_shows_player_cards_and_only_dealer_upcard_when_dealt(self):
         _, output = self.play(["10", "9", "8", "K"], ["50", "s"])
 
+        # The table shows only the dealer's first card; ?? stands for the hidden card.
         self.assertIn("Bet: $50\n\nDealer: 9♠ ??\nYou:    10♠ 8♠ (18)\n", output)
         self.assertNotIn("K♠", output)
 
@@ -189,6 +206,7 @@ class PlayBlackjackTest(PlainScreenTest):
         )
 
     def test_cancelling_the_bet_leaves_the_table_without_dealing(self):
+        # An empty deck would fail if the game tried to draw after cancellation.
         output = io.StringIO()
         with patch("builtins.input", side_effect=[""]), redirect_stdout(output):
             result = blackjack(500, stacked_deck())
@@ -198,8 +216,11 @@ class PlayBlackjackTest(PlainScreenTest):
         self.assertEqual(screen.history, [])
 
     def play_garage(self, decks, inputs):
+        # Integration check: enter Blackjack from the garage, play, leave, then exit.
         output = io.StringIO()
         with (
+            # Replace the deck factory where blackjack() looks it up so play is fixed.
+            # side_effect hands out one prepared deck per round.
             patch("blackjack.new_deck", side_effect=decks),
             patch("builtins.input", side_effect=inputs),
             redirect_stdout(output),
@@ -231,5 +252,6 @@ class PlayBlackjackTest(PlainScreenTest):
         )
 
 
+# Run this file's unittest cases when launched directly.
 if __name__ == "__main__":
     unittest.main()

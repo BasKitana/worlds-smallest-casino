@@ -1,3 +1,5 @@
+# Tests for tier thresholds, bet validation, and the interactive betting prompt.
+# assertEqual checks exact values; assertIsNone checks the no-error/cancel signal.
 import io
 import unittest
 from contextlib import redirect_stdout
@@ -8,9 +10,11 @@ from test_screen import PlainScreenTest
 
 
 class BetLimitsTest(unittest.TestCase):
+    # Values just below and exactly at thresholds catch off-by-one mistakes.
     def test_identifies_tier_at_each_boundary(self):
         for balance, expected in ((2499, 1), (2500, 2), (4999, 2), (5000, 3)):
             with self.subTest(balance=balance):
+                # Label loop cases individually so failures show the failing balance.
                 self.assertEqual(bet_tier(balance), expected)
 
     def test_tier_boundaries(self):
@@ -23,6 +27,7 @@ class BetLimitsTest(unittest.TestCase):
 
 
 class ValidateBetTest(unittest.TestCase):
+    # These tests call the validation rules directly, without any keyboard input.
     def test_minimum_and_maximum_are_inclusive_at_tier_boundaries(self):
         for balance, minimum, maximum in (
             (2499, 10, 100),
@@ -31,10 +36,12 @@ class ValidateBetTest(unittest.TestCase):
             (5000, 500, 2500),
         ):
             with self.subTest(balance=balance):
+                # Both limits are allowed; None means the bet has no validation error.
                 self.assertIsNone(validate_bet(minimum, balance))
                 self.assertIsNone(validate_bet(maximum, balance))
 
     def test_rejects_bets_just_outside_limits_at_each_tier_boundary(self):
+        # One dollar beyond either allowed endpoint must be rejected in each tier.
         for balance, minimum, maximum in (
             (2499, 10, 100),
             (2500, 100, 500),
@@ -72,13 +79,17 @@ class ValidateBetTest(unittest.TestCase):
 
 
 class GetBetTest(PlainScreenTest):
+    # These tests also check the messages and retry behavior seen by a player.
     def run_get_bet(self, balance, inputs):
+        # StringIO stores printed text in memory. patch temporarily replaces input()
+        # with successive list entries; leaving the with block restores normal input.
         output = io.StringIO()
         with patch("builtins.input", side_effect=inputs), redirect_stdout(output):
             amount = get_bet(balance)
         return amount, output.getvalue()
 
     def test_reprompts_until_valid_bet(self):
+        # Try text, an undersized bet, an oversized bet, and finally a valid $50 bet.
         amount, output = self.run_get_bet(500, ["abc", "5", "200", "50"])
 
         self.assertEqual(amount, 50)
@@ -88,6 +99,7 @@ class GetBetTest(PlainScreenTest):
         self.assertEqual(output.count("WORLD'S SMALLEST CASINO"), 4)
 
     def test_shows_current_tier_limits(self):
+        # The underscore ignores the returned bet because this test checks output.
         _, output = self.run_get_bet(3000, ["100"])
 
         self.assertIn("| $3,000 | Tier 2: $100-$500", output)
@@ -98,5 +110,6 @@ class GetBetTest(PlainScreenTest):
         self.assertIsNone(amount)
 
 
+# Run this file's unittest cases when launched directly.
 if __name__ == "__main__":
     unittest.main()

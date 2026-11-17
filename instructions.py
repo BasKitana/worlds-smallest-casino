@@ -1,6 +1,8 @@
+# The How to Play screen: brief controls, payouts, and betting rules for each table.
 import screen
 from betting import bet_limits, bet_tier
 
+# Menu choice -> (title, lines). The keys match the numbers on the How to Play menu.
 TABLE_INSTRUCTIONS = {
     "1": (
         "Poker — Five-Card Draw",
@@ -46,6 +48,7 @@ MENU = [
 
 
 def betting_info(balance):
+    # The same betting reminders appear under every table, using the current tier.
     minimum, maximum = bet_limits(balance)
     return [
         f"Your balance of ${balance} is Tier {bet_tier(balance)}: bets from ${minimum} to ${maximum}.",
@@ -57,10 +60,12 @@ def betting_info(balance):
 
 def table_instructions(choice, balance):
     title, lines = TABLE_INSTRUCTIONS[choice]
+    # * unpacks the generated "- line" strings into the list between title and "".
     return [title, *(f"- {line}" for line in lines + betting_info(balance)), ""]
 
 
 def how_to_play(balance):
+    # Remember the chosen table so its instructions stay above the menu on each redraw.
     selected = None
     while True:
         body = table_instructions(selected, balance) if selected else []

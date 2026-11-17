@@ -12,8 +12,11 @@ USE_ANSI = True  # Tests turn this off to get plain text with no clearing.
 WIDTH = 74
 HISTORY_SIZE = 3
 
-CLEAR_CODE = "\033[2J\033[3J\033[H"  # Clear screen and scrollback, cursor to top.
+# "\033[" starts an ANSI escape code: a few characters the terminal treats as a
+# command instead of text. These clear the screen and scrollback, then move to the top.
+CLEAR_CODE = "\033[2J\033[3J\033[H"
 RESET = "\033[0m"
+# Color codes by kind of message; "\033[0m" (RESET) returns to normal text.
 COLORS = {
     "bold": "1",
     "win": "32",
@@ -23,13 +26,16 @@ COLORS = {
     "tier": "33",
 }
 
+# Module-level state shared by every screen during one game. The leading underscore
+# marks _notices as internal: other files should call notice() instead.
 rounds_played = 0
-history = []
+history = []  # Newest round first, at most HISTORY_SIZE entries.
 _notices = []
 
 
 def reset():
     """Start a new game: forget past rounds and pending notices."""
+    # global lets this function reassign the module-level counter, not a local copy.
     global rounds_played
     rounds_played = 0
     history.clear()
@@ -37,6 +43,7 @@ def reset():
 
 
 def money(amount):
+    # The "," format option adds thousands separators: 1250 becomes "$1,250".
     return f"${amount:,}"
 
 
@@ -51,6 +58,7 @@ def color_cards(line):
     """Show hearts and diamonds cards in red."""
     if not USE_ANSI:
         return line
+    # Split on single spaces so join() puts the line back exactly as it was.
     return " ".join(
         paint(word, "red") if word.endswith(("♥", "♦")) else word for word in line.split(" ")
     )
@@ -60,6 +68,7 @@ def strip_ansi(text):
     """Remove ANSI escape codes, for reading output in tests."""
     plain = []
     in_code = False
+    # Skip from each escape character up to the letter that ends its code.
     for char in text:
         if in_code:
             in_code = not char.isalpha()
@@ -93,6 +102,7 @@ def record_round(table, outcome, details=(), kind="info"):
             "kind": kind,
         },
     )
+    # Insert at index 0 so the newest round is first, then drop rounds past the limit.
     del history[HISTORY_SIZE:]
 
 
@@ -128,6 +138,7 @@ def show(location, balance=None, body=(), at_table=False):
                 print(color_cards(f"    {detail}"))
         print("-" * WIDTH)
 
+    # Each notice is shown once, then the queue is emptied for the next screen.
     for text, kind in _notices:
         print(paint(f"> {text}", kind))
     _notices.clear()

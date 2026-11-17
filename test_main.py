@@ -1,3 +1,5 @@
+# Menu tests check navigation, displayed balances, and tier-change notifications.
+# unittest discovers test_* methods; assertions describe the expected behavior.
 import io
 import subprocess
 import sys
@@ -11,6 +13,7 @@ import screen
 from test_screen import PlainScreenTest
 
 
+# Locate main.py relative to this file, regardless of the shell's working directory.
 ROOT = Path(__file__).resolve().parent
 
 
@@ -19,6 +22,8 @@ GARAGE = "WORLD'S SMALLEST CASINO | Garage"
 
 def run_game(inputs, raw=False):
     """Run the real game in a subprocess, with ANSI codes stripped unless raw is set."""
+    # Use this test runner's Python and feed each list entry as one typed line.
+    # Capture output for assertions; fail on a crash or a wait longer than 5 seconds.
     output = subprocess.run(
         [sys.executable, str(ROOT / "main.py")],
         input="\n".join(inputs) + "\n",
@@ -31,10 +36,12 @@ def run_game(inputs, raw=False):
 
 
 class CasinoMenuSmokeTest(PlainScreenTest):
+    # Smoke tests exercise the real command-line program as a separate process.
     def run_game(self, inputs):
         return run_game(inputs)
 
     def test_start_tables_return_with_balance_and_exit(self):
+        # Start, cancel Poker, cancel Blackjack, leave Roulette, then exit the garage.
         output = self.run_game(
             ["1", "1", "", "2", "", "3", "9", "5"]
         )
@@ -44,6 +51,7 @@ class CasinoMenuSmokeTest(PlainScreenTest):
         self.assertIn("| Blackjack | Round 1 | $500 |", output)
         self.assertNotIn("Placeholder", output)
         self.assertIn("Roulette Wagers", output)
+        # The garage appears initially and after leaving each of the three tables.
         self.assertEqual(output.count(f"{GARAGE} | $500 | Tier 1: $10-$100"), 4)
         self.assertEqual(output.count("| Main menu"), 1)
         self.assertIn("Goodbye! You leave the casino with $500.", output)
@@ -71,6 +79,7 @@ class CasinoMenuSmokeTest(PlainScreenTest):
         self.assertEqual(output.count("Goodbye!"), 1)
 
     def test_garage_displays_tier_changes_after_table_returns(self):
+        # Exercise all tables across both tier thresholds, plus an unchanged tier.
         for table, table_choice in (("poker", "1"), ("blackjack", "2"), ("roulette", "3")):
             for start, result, tier, limits, message in (
                 (2499, 2500, 2, "$100-$500", "Tier up! Your balance moved to Tier 2."),
@@ -80,7 +89,12 @@ class CasinoMenuSmokeTest(PlainScreenTest):
                 (2500, 2600, 2, "$100-$500", None),
             ):
                 with self.subTest(table=table, start=start, result=result):
+                    # subTest labels each case so a failure identifies its table/balance.
                     output = io.StringIO()
+                    # Replace the table function where main looks it up: one round
+                    # returns a known balance, then None means the player left.
+                    # input's side_effect entries are consumed one call at a time;
+                    # redirect_stdout captures print() text in an in-memory buffer.
                     with patch("builtins.input", side_effect=[table_choice, "5"]), patch(
                         f"main.{table}", side_effect=[result, None]
                     ), redirect_stdout(output):
@@ -90,6 +104,7 @@ class CasinoMenuSmokeTest(PlainScreenTest):
                     if message:
                         self.assertEqual(output.count(f"> {message}"), 1)
                     else:
+                        # Moving within a tier must not announce a tier change.
                         self.assertNotIn("Tier up!", output)
                         self.assertNotIn("Tier down.", output)
                     self.assertIn(
@@ -98,15 +113,20 @@ class CasinoMenuSmokeTest(PlainScreenTest):
 
 
 class GarageBalanceTest(PlainScreenTest):
+    # Check balance persistence between rounds and the $10,000 victory condition.
     def play_garage(self, table, results, inputs):
+        # Replace the selected table with successive returned balances. Record print
+        # calls and table calls so tests can inspect messages and incoming balances.
         with patch.object(main, table, side_effect=results) as game, patch(
             "builtins.input", side_effect=inputs
         ), patch("builtins.print") as fake_print:
             main.garage(500)
+        # Reconstruct printed lines by converting each recorded argument to text.
         output = "\n".join(" ".join(map(str, call.args)) for call in fake_print.call_args_list)
         return game, output
 
     def test_table_replays_with_updated_balance_until_player_leaves(self):
+        # Each round must receive the previous round's result: $500, then $600, then $450.
         game, output = self.play_garage("roulette", [600, 450, None], ["3", "5"])
 
         self.assertEqual(
@@ -128,6 +148,7 @@ class GarageBalanceTest(PlainScreenTest):
         self.assertEqual(output.count("Tier up! Your balance moved to Tier 2."), 1)
 
     def test_reaching_winning_balance_ends_play_with_victory(self):
+        # $9,999 keeps playing; exactly $10,000 ends without an extra exit prompt.
         game, output = self.play_garage("poker", [9_999, 10_000], ["1"])
 
         self.assertEqual(game.call_count, 2)
@@ -136,12 +157,14 @@ class GarageBalanceTest(PlainScreenTest):
         self.assertNotIn("Goodbye!", output)
 
     def test_balance_above_winning_threshold_also_wins(self):
+        # A large win may skip past the target and must still count as victory.
         _, output = self.play_garage("blackjack", [12_500], ["2"])
 
         self.assertIn("You win the game", output)
 
 
 class HowToPlayTest(PlainScreenTest):
+    # Open How to Play from the garage and check the instructions for each table.
     def run_menu(self, inputs, balance=500):
         output = io.StringIO()
         with patch("builtins.input", side_effect=inputs), redirect_stdout(output):
@@ -177,5 +200,6 @@ class HowToPlayTest(PlainScreenTest):
         self.assertIn("The dealer draws until reaching 17 or more.", output)
 
 
+# This also lets you run just this file with python3 test_main.py.
 if __name__ == "__main__":
     unittest.main()
