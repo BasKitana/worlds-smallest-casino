@@ -1,10 +1,15 @@
+# European Roulette uses numbers 0-36, with a single green zero.
+# Each wager is (display label, set of winning numbers, profit multiplier).
 import random
 
 from betting import get_bet
 
 RED = {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}
+# range() excludes its upper bound; set subtraction keeps non-red numbers 1-36.
 BLACK = set(range(1, 37)) - RED
 
+# Menu choices map to preset wagers. Zero is excluded, even from the "Even" bet.
+# % is the remainder operator: n % 2 is 1 for odd numbers and 0 for even numbers.
 OUTSIDE_WAGERS = {
     "2": ("Red", RED, 1),
     "3": ("Black", BLACK, 1),
@@ -16,12 +21,14 @@ OUTSIDE_WAGERS = {
 
 
 def color(number):
+    # Translate a valid wheel number into the color shown in the result message.
     if number == 0:
         return "Green"
     return "Red" if number in RED else "Black"
 
 
 def ask_number(prompt, low, high):
+    # Retry until an integer falls within both inclusive bounds; blank means back.
     while True:
         choice = input(prompt).strip()
         if choice == "":
@@ -32,6 +39,7 @@ def ask_number(prompt, low, high):
 
 
 def choose_wager():
+    # Return a wager tuple, or None when the player chooses to leave the table.
     while True:
         print("\nRoulette Wagers")
         print("1. Single number (pays 35 to 1)")
@@ -49,6 +57,7 @@ def choose_wager():
         if choice == "1":
             number = ask_number("Pick a number (0-36, or press Enter to go back): ", 0, 36)
             if number is None:
+                # Cancel just this number selection and redisplay the wager menu.
                 continue
             return (f"Number {number}", {number}, 35)
         elif choice in OUTSIDE_WAGERS:
@@ -59,6 +68,7 @@ def choose_wager():
             )
             if dozen is None:
                 continue
+            # Convert choices 1, 2, 3 into starting numbers 1, 13, 25.
             start = (dozen - 1) * 12 + 1
             return (f"Dozen {start}-{start + 11}", set(range(start, start + 12)), 2)
         elif choice == "9":
@@ -68,10 +78,13 @@ def choose_wager():
 
 
 def spin():
+    # randint includes both endpoints, giving 37 possible results including zero.
     return random.randint(0, 36)
 
 
 def resolve(wager, bet, number):
+    # Ignore the display label and check whether the result belongs to the wager.
+    # Return net profit/loss: the calling game has not deducted the original stake.
     _, numbers, payout = wager
     if number in numbers:
         return bet * payout
@@ -79,6 +92,7 @@ def resolve(wager, bet, number):
 
 
 def roulette(balance):
+    # Play one spin, returning the unchanged balance if either selection is cancelled.
     print("\nRoulette")
 
     wager = choose_wager()
@@ -98,7 +112,7 @@ def roulette(balance):
     else:
         print(f"You lose ${bet}.")
 
-    balance += change
+    balance += change  # Add winnings or subtract the lost stake exactly once.
     print(f"New balance: ${balance}")
     input("Press Enter to return to the garage...")
     return balance

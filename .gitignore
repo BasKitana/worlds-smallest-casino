@@ -1,2 +1,4 @@
+# Python creates these cache folders when importing modules; Git need not track them.
 __pycache__/
+# Ignore generated .pyc, .pyo, and .pyd files rather than committing compiled output.
 *.py[cod]

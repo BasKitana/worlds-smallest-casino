@@ -1,3 +1,5 @@
+# One round of Blackjack: bet, deal, take turns, settle, and return the new balance.
+# A card is a (rank, suit) tuple, such as ("A", "♠"); a hand/deck is a list of cards.
 import random
 
 from betting import get_bet
@@ -5,6 +7,8 @@ from betting import get_bet
 RANKS = ("A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K")
 SUITS = ("♠", "♥", "♦", "♣")
 
+# Named results keep scoring, payout calculations, and messages consistent.
+# A push means a tie, and a natural blackjack means 21 with the first two cards.
 BLACKJACK = "blackjack"
 WIN = "win"
 PUSH = "push"
@@ -12,6 +16,7 @@ LOSE = "lose"
 
 
 def new_deck():
+    # Combine every suit with every rank to build 52 unique cards, then mix in place.
     deck = [(rank, suit) for suit in SUITS for rank in RANKS]
     random.shuffle(deck)
     return deck
@@ -19,6 +24,7 @@ def new_deck():
 
 def deal_initial_cards(deck):
     """Deal two cards each, alternating, starting with the player."""
+    # pop() removes the last card, so dealing also changes the supplied deck.
     player = [deck.pop()]
     dealer = [deck.pop()]
     player.append(deck.pop())
@@ -27,9 +33,10 @@ def deal_initial_cards(deck):
 
 
 def hand_value(hand):
+    # Start by counting aces as 11; downgrade them to 1 only to avoid going over 21.
     total = 0
     aces = 0
-    for rank, _ in hand:
+    for rank, _ in hand:  # Unpack each card; the underscore marks the unused suit.
         if rank == "A":
             total += 11
             aces += 1
@@ -39,24 +46,29 @@ def hand_value(hand):
             total += int(rank)
 
     while total > 21 and aces:
+        # Changing one ace from 11 to 1 reduces the total by 10; repeat if needed.
         total -= 10
         aces -= 1
     return total
 
 
 def is_blackjack(hand):
+    # Reaching 21 after drawing extra cards is not a natural and earns no bonus.
     return len(hand) == 2 and hand_value(hand) == 21
 
 
 def format_hand(hand):
+    # Format each card and join the strings with spaces, e.g. "A♠ 10♥".
     return " ".join(f"{rank}{suit}" for rank, suit in hand)
 
 
 def show_player_hand(hand):
+    # Include the best ace-adjusted total alongside the visible cards.
     print(f"Your cards: {format_hand(hand)} (total {hand_value(hand)})")
 
 
 def show_dealer_hand(hand):
+    # Reveal the dealer's entire hand once the player's decisions are finished.
     print(f"Dealer's cards: {format_hand(hand)} (total {hand_value(hand)})")
 
 
@@ -66,6 +78,7 @@ def player_turn(deck, player):
         choice = input("Hit or stand? (h/s): ").strip().lower()
 
         if choice in ("h", "hit"):
+            # append() adds the drawn card to the existing player hand in place.
             player.append(deck.pop())
             show_player_hand(player)
         elif choice in ("s", "stand"):
@@ -76,12 +89,15 @@ def player_turn(deck, player):
 
 def dealer_turn(deck, dealer):
     """The dealer draws on 16 or less and stands on 17 or more, including soft 17."""
+    # Soft 17 is a total of 17 that includes an ace still counted as 11.
     while hand_value(dealer) < 17:
         dealer.append(deck.pop())
+        # [-1:] makes a one-card list for the formatter from the newest card.
         print(f"Dealer draws: {format_hand(dealer[-1:])}")
 
 
 def determine_result(player, dealer):
+    # Rule order matters: a player bust loses first; naturals outrank ordinary 21.
     player_total = hand_value(player)
     dealer_total = hand_value(dealer)
 
@@ -97,12 +113,14 @@ def determine_result(player, dealer):
         return WIN
     if player_total < dealer_total:
         return LOSE
-    return PUSH
+    return PUSH  # Neither hand won, so their non-busting totals are equal.
 
 
 def net_winnings(result, bet):
     """Return the balance change for a result. A blackjack pays 3:2, rounded down."""
+    # The stake was never deducted: return profit, a negative loss, or zero for a tie.
     if result == BLACKJACK:
+        # Integer division (//) drops fractional dollars: a $15 bet wins $22.
         return bet * 3 // 2
     if result == WIN:
         return bet
@@ -112,6 +130,7 @@ def net_winnings(result, bet):
 
 
 def result_message(result, net, player, dealer):
+    # Turn the result into a readable explanation; -net displays a loss positively.
     if result == BLACKJACK:
         return f"Blackjack! You win ${net}."
     if result == WIN:
@@ -129,23 +148,28 @@ def result_message(result, net, player, dealer):
 
 def blackjack(balance, deck=None):
     """Play one round and return the new balance."""
+    # Tests can supply a fixed deck; normal play creates a fresh shuffled one.
     print("\nBlackjack")
     bet = get_bet(balance)
     if bet is None:
+        # Cancellation returns immediately without dealing cards or changing money.
         return balance
 
     if deck is None:
         deck = new_deck()
 
     player, dealer = deal_initial_cards(deck)
+    # [:1] selects only the first card, keeping the dealer's second card hidden.
     print(f"\nDealer shows: {format_hand(dealer[:1])} and one face-down card")
     show_player_hand(player)
 
+    # A natural on either side settles the round without any hit/stand decisions.
     has_natural = is_blackjack(player) or is_blackjack(dealer)
     if not has_natural:
         player_turn(deck, player)
 
     show_dealer_hand(dealer)
+    # The dealer needs no extra cards if a natural or the player's bust decided it.
     if not has_natural and hand_value(player) <= 21:
         dealer_turn(deck, dealer)
         if len(dealer) > 2:
@@ -155,7 +179,7 @@ def blackjack(balance, deck=None):
     net = net_winnings(result, bet)
     print(result_message(result, net, player, dealer))
 
-    balance += net
+    balance += net  # Apply the round's profit/loss once; a push adds zero.
     print(f"New balance: ${balance}")
     input("Press Enter to return to the garage...")
     return balance
