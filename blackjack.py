@@ -1,5 +1,6 @@
 import random
 
+import screen
 from betting import get_bet
 
 RANKS = ("A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K")
@@ -52,33 +53,39 @@ def format_hand(hand):
     return " ".join(f"{rank}{suit}" for rank, suit in hand)
 
 
-def show_player_hand(hand):
-    print(f"Your cards: {format_hand(hand)} (total {hand_value(hand)})")
+def hand_summary(hand):
+    return f"{format_hand(hand)} ({hand_value(hand)})"
 
 
-def show_dealer_hand(hand):
-    print(f"Dealer's cards: {format_hand(hand)} (total {hand_value(hand)})")
+def table_lines(bet, player, dealer):
+    """The blackjack table mid-hand, with the dealer's second card face down."""
+    return [
+        f"Bet: {screen.money(bet)}",
+        "",
+        f"Dealer: {format_hand(dealer[:1])} ??",
+        f"You:    {hand_summary(player)}",
+        "",
+    ]
 
 
-def player_turn(deck, player):
-    """Let the player hit until they stand, bust, or reach 21."""
+def player_turn(deck, player, dealer, balance, bet):
+    """Redraw the table and let the player hit until they stand, bust, or reach 21."""
     while hand_value(player) < 21:
+        screen.show("Blackjack", balance, table_lines(bet, player, dealer), at_table=True)
         choice = input("Hit or stand? (h/s): ").strip().lower()
 
         if choice in ("h", "hit"):
             player.append(deck.pop())
-            show_player_hand(player)
         elif choice in ("s", "stand"):
             return
         else:
-            print("Invalid choice. Please enter h to hit or s to stand.")
+            screen.notice("Invalid choice. Please enter h to hit or s to stand.", "error")
 
 
 def dealer_turn(deck, dealer):
     """The dealer draws on 16 or less and stands on 17 or more, including soft 17."""
     while hand_value(dealer) < 17:
         dealer.append(deck.pop())
-        print(f"Dealer draws: {format_hand(dealer[-1:])}")
 
 
 def determine_result(player, dealer):
@@ -129,8 +136,7 @@ def result_message(result, net, player, dealer):
 
 def blackjack(balance, deck=None):
     """Play one round and return the new balance, or None if the player leaves the table."""
-    print("\nBlackjack")
-    bet = get_bet(balance)
+    bet = get_bet(balance, "Blackjack", ["Place a bet to deal a new hand."])
     if bet is None:
         return None
 
@@ -138,23 +144,19 @@ def blackjack(balance, deck=None):
         deck = new_deck()
 
     player, dealer = deal_initial_cards(deck)
-    print(f"\nDealer shows: {format_hand(dealer[:1])} and one face-down card")
-    show_player_hand(player)
-
     has_natural = is_blackjack(player) or is_blackjack(dealer)
     if not has_natural:
-        player_turn(deck, player)
-
-    show_dealer_hand(dealer)
-    if not has_natural and hand_value(player) <= 21:
-        dealer_turn(deck, dealer)
-        if len(dealer) > 2:
-            show_dealer_hand(dealer)
+        player_turn(deck, player, dealer, balance, bet)
+        if hand_value(player) <= 21:
+            dealer_turn(deck, dealer)
 
     result = determine_result(player, dealer)
     net = net_winnings(result, bet)
-    print(result_message(result, net, player, dealer))
-
-    balance += net
-    print(f"New balance: ${balance}")
-    return balance
+    kind = "win" if net > 0 else "lose" if net < 0 else "push"
+    screen.record_round(
+        "Blackjack",
+        result_message(result, net, player, dealer),
+        [f"You: {hand_summary(player)} | Dealer: {hand_summary(dealer)}"],
+        kind,
+    )
+    return balance + net

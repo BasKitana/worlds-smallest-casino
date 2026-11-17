@@ -3,7 +3,9 @@ import unittest
 from contextlib import redirect_stdout
 from unittest.mock import patch
 
+import screen
 from roulette import BLACK, RED, choose_wager, color, resolve, roulette
+from test_screen import PlainScreenTest
 
 
 class WheelTest(unittest.TestCase):
@@ -18,7 +20,7 @@ class WheelTest(unittest.TestCase):
         self.assertEqual(color(2), "Black")
 
 
-class ChooseWagerTest(unittest.TestCase):
+class ChooseWagerTest(PlainScreenTest):
     def choose(self, inputs):
         output = io.StringIO()
         with patch("builtins.input", side_effect=inputs), redirect_stdout(output):
@@ -84,7 +86,7 @@ class ResolveTest(unittest.TestCase):
             self.assertEqual(resolve(wager, 20, 0), -20)
 
 
-class RouletteRoundTest(unittest.TestCase):
+class RouletteRoundTest(PlainScreenTest):
     def play(self, balance, inputs, number):
         output = io.StringIO()
         with patch("builtins.input", side_effect=inputs), patch(
@@ -97,21 +99,26 @@ class RouletteRoundTest(unittest.TestCase):
         balance, output = self.play(500, ["2", "100"], 3)
 
         self.assertEqual(balance, 600)
-        self.assertIn("The ball lands on 3 Red.", output)
-        self.assertIn("You win $100!", output)
-        self.assertIn("New balance: $600", output)
+        self.assertIn("Wager: Red (pays 1 to 1)", output)
+        latest = screen.history[0]
+        self.assertEqual(latest["outcome"], "The ball lands on 3 Red. You win $100!")
+        self.assertEqual(latest["details"], ["Wager: $100 on Red"])
+        self.assertEqual(latest["kind"], "win")
 
     def test_losing_round(self):
         balance, output = self.play(500, ["1", "7", "50"], 8)
 
         self.assertEqual(balance, 450)
-        self.assertIn("You bet $50 on Number 7.", output)
-        self.assertIn("You lose $50.", output)
+        latest = screen.history[0]
+        self.assertEqual(latest["outcome"], "The ball lands on 8 Black. You lose $50.")
+        self.assertEqual(latest["details"], ["Wager: $50 on Number 7"])
+        self.assertEqual(latest["kind"], "lose")
 
     def test_return_before_betting_leaves_the_table(self):
         balance, _ = self.play(500, ["9"], 0)
 
         self.assertIsNone(balance)
+        self.assertEqual(screen.history, [])
 
     def test_cancel_bet_leaves_the_table(self):
         balance, _ = self.play(500, ["2", ""], 0)

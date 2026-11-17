@@ -1,3 +1,6 @@
+import screen
+
+
 def bet_tier(balance):
     if balance >= 5000:
         return 3
@@ -22,23 +25,21 @@ def validate_bet(amount, balance):
     return None
 
 
-def get_bet(balance):
-    minimum, maximum = bet_limits(balance)
-
+def get_bet(balance, location="Table", body=()):
+    """Redraw the bet screen until the player enters a valid bet or leaves (None)."""
     while True:
-        print(f"\nBalance: ${balance} — Bets: ${minimum}-${maximum}")
+        screen.show(location, balance, [*body, ""] if body else (), at_table=True)
         choice = input("Enter your bet (or press Enter to return to the garage): ").strip()
 
         if choice == "":
             return None
         if not choice.isdigit():
-            print("Invalid bet. Please enter a whole dollar amount.")
+            screen.notice("Invalid bet. Please enter a whole dollar amount.", "error")
             continue
 
         amount = int(choice)
         error = validate_bet(amount, balance)
         if error:
-            print(f"Bet rejected. {error}")
+            screen.notice(f"Bet rejected. {error}", "error")
         else:
-            print(f"Bet accepted: ${amount}")
             return amount

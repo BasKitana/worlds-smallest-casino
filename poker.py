@@ -1,6 +1,7 @@
 import random
 from collections import Counter
 
+import screen
 from betting import get_bet
 
 RANKS = {11: "J", 12: "Q", 13: "K", 14: "A"}
@@ -77,8 +78,23 @@ def hand_name(hand):
     )[rank_hand(hand)[0]]
 
 
-def choose_discards():
+def cards_text(hand):
+    return " ".join(describe_card(card) for card in hand)
+
+
+def choose_discards(balance, bet, hand):
     while True:
+        screen.show(
+            "Poker",
+            balance,
+            [
+                f"Bet: {screen.money(bet)}",
+                "",
+                f"Your hand: {describe_hand(hand)}  ({hand_name(hand)})",
+                "",
+            ],
+            at_table=True,
+        )
         choice = input(
             "Discard up to 3 cards by position (comma-separated), or press Enter to stand: "
         ).strip()
@@ -91,7 +107,7 @@ def choose_discards():
             and len({int(part) for part in parts}) == len(parts)
         ):
             return [int(part) - 1 for part in parts]
-        print("Invalid choice. Enter up to 3 different positions from 1 to 5.")
+        screen.notice("Invalid choice. Enter up to 3 different positions from 1 to 5.", "error")
 
 
 def draw_replacements(hand, deck, positions):
@@ -123,11 +139,14 @@ def resolve(player_hand, dealer_hand, bet):
 
 
 def poker(balance):
-    print("\nPoker — Five-Card Draw")
-    print("Rules: Make the best five-card poker hand. You may discard and draw up to 3 cards.")
-    print("Beat the dealer to win even money; a tie returns your bet.")
-
-    bet = get_bet(balance)
+    bet = get_bet(
+        balance,
+        "Poker",
+        [
+            "Five-Card Draw: discard and draw up to 3 cards, then beat the dealer's hand.",
+            "A win pays 1 to 1 and a tie returns your bet.",
+        ],
+    )
     if bet is None:
         return None
 
@@ -135,21 +154,26 @@ def poker(balance):
     random.shuffle(deck)
     player_hand = deal_hand(deck)
     dealer_hand = deal_hand(deck)
-    print(f"\nYour hand: {describe_hand(player_hand)}")
-    discards = choose_discards()
+    discards = choose_discards(balance, bet, player_hand)
     player_hand = draw_replacements(player_hand, deck, discards)
     dealer_hand = draw_replacements(dealer_hand, deck, dealer_discards(dealer_hand))
 
-    print(f"\nYour final hand: {describe_hand(player_hand)} — {hand_name(player_hand)}")
-    print(f"Dealer's hand: {describe_hand(dealer_hand)} — {hand_name(dealer_hand)}")
+    yours, theirs = hand_name(player_hand), hand_name(dealer_hand)
     change = resolve(player_hand, dealer_hand, bet)
     if change > 0:
-        print(f"You win ${change}!")
+        outcome, kind = f"Your {yours} beats the dealer's {theirs}. You win ${change}!", "win"
     elif change < 0:
-        print(f"You lose ${bet}.")
+        outcome, kind = f"The dealer's {theirs} beats your {yours}. You lose ${bet}.", "lose"
     else:
-        print("Push — your bet is returned.")
+        outcome, kind = f"Both have {yours}. Push — your bet is returned.", "push"
 
-    balance += change
-    print(f"New balance: ${balance}")
-    return balance
+    screen.record_round(
+        "Poker",
+        outcome,
+        [
+            f"You:    {cards_text(player_hand)} ({yours})",
+            f"Dealer: {cards_text(dealer_hand)} ({theirs})",
+        ],
+        kind,
+    )
+    return balance + change

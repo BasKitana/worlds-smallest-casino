@@ -8,6 +8,16 @@ A small text menu with a $500 starting balance and playable Poker, Blackjack, an
 python3 main.py
 ```
 
+## Terminal UI
+
+`screen.py` clears the terminal before every step (menus, bets, each blackjack hit) using ANSI escape codes, so it needs no libraries. Each screen shows:
+
+- a status line with the current table, round number, balance, and tier limits
+- the last 3 rounds, numbered and spaced apart, with each round's final hands or wager
+- any notices, such as a rejected bet or a tier change, shown once in color
+
+Hearts and diamonds are shown in red, wins in green, and losses in red. This works in macOS/Linux terminals, VS Code, and Windows Terminal, but not in the old Windows `cmd.exe`.
+
 ## Test
 
 ```sh

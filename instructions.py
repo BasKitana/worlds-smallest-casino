@@ -1,3 +1,4 @@
+import screen
 from betting import bet_limits, bet_tier
 
 TABLE_INSTRUCTIONS = {
@@ -34,6 +35,15 @@ TABLE_INSTRUCTIONS = {
     ),
 }
 
+MENU = [
+    "Choose a table to learn about:",
+    "1. Poker",
+    "2. Blackjack",
+    "3. Roulette",
+    "4. Return to the garage",
+    "",
+]
+
 
 def betting_info(balance):
     minimum, maximum = bet_limits(balance)
@@ -45,21 +55,21 @@ def betting_info(balance):
     ]
 
 
-def how_to_play(balance):
-    while True:
-        print("\nHow to Play")
-        print("1. Poker")
-        print("2. Blackjack")
-        print("3. Roulette")
-        print("4. Return to the garage")
+def table_instructions(choice, balance):
+    title, lines = TABLE_INSTRUCTIONS[choice]
+    return [title, *(f"- {line}" for line in lines + betting_info(balance)), ""]
 
-        choice = input("Choose a table to learn about: ").strip()
+
+def how_to_play(balance):
+    selected = None
+    while True:
+        body = table_instructions(selected, balance) if selected else []
+        screen.show("How to Play", balance, body + MENU)
+
+        choice = input("Choose an option: ").strip()
         if choice in TABLE_INSTRUCTIONS:
-            title, lines = TABLE_INSTRUCTIONS[choice]
-            print(f"\n{title}")
-            for line in lines + betting_info(balance):
-                print(f"- {line}")
+            selected = choice
         elif choice in ("4", ""):
             return
         else:
-            print("Invalid choice. Please select 1, 2, 3, or 4.")
+            screen.notice("Invalid choice. Please select 1, 2, 3, or 4.", "error")

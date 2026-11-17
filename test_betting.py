@@ -4,6 +4,7 @@ from contextlib import redirect_stdout
 from unittest.mock import patch
 
 from betting import bet_limits, bet_tier, get_bet, validate_bet
+from test_screen import PlainScreenTest
 
 
 class BetLimitsTest(unittest.TestCase):
@@ -70,7 +71,7 @@ class ValidateBetTest(unittest.TestCase):
         )
 
 
-class GetBetTest(unittest.TestCase):
+class GetBetTest(PlainScreenTest):
     def run_get_bet(self, balance, inputs):
         output = io.StringIO()
         with patch("builtins.input", side_effect=inputs), redirect_stdout(output):
@@ -84,12 +85,12 @@ class GetBetTest(unittest.TestCase):
         self.assertIn("Please enter a whole dollar amount.", output)
         self.assertIn("Bet rejected. The minimum bet is $10.", output)
         self.assertIn("Bet rejected. The maximum bet is $100.", output)
-        self.assertIn("Bet accepted: $50", output)
+        self.assertEqual(output.count("WORLD'S SMALLEST CASINO"), 4)
 
     def test_shows_current_tier_limits(self):
         _, output = self.run_get_bet(3000, ["100"])
 
-        self.assertIn("Balance: $3000 — Bets: $100-$500", output)
+        self.assertIn("| $3,000 | Tier 2: $100-$500", output)
 
     def test_blank_input_cancels(self):
         amount, _ = self.run_get_bet(500, [""])

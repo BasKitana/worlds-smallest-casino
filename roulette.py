@@ -1,5 +1,6 @@
 import random
 
+import screen
 from betting import get_bet
 
 RED = {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}
@@ -14,6 +15,20 @@ OUTSIDE_WAGERS = {
     "7": ("High (19-36)", set(range(19, 37)), 1),
 }
 
+WAGER_MENU = [
+    "Roulette Wagers",
+    "1. Single number (pays 35 to 1)",
+    "2. Red (pays 1 to 1)",
+    "3. Black (pays 1 to 1)",
+    "4. Odd (pays 1 to 1)",
+    "5. Even (pays 1 to 1)",
+    "6. Low 1-18 (pays 1 to 1)",
+    "7. High 19-36 (pays 1 to 1)",
+    "8. Dozen (pays 2 to 1)",
+    "9. Return to the garage",
+    "",
+]
+
 
 def color(number):
     if number == 0:
@@ -21,33 +36,30 @@ def color(number):
     return "Red" if number in RED else "Black"
 
 
-def ask_number(prompt, low, high):
+def ask_number(prompt, low, high, balance=None, title=""):
     while True:
+        screen.show("Roulette", balance, [title, ""] if title else (), at_table=True)
         choice = input(prompt).strip()
         if choice == "":
             return None
         if choice.isdigit() and low <= int(choice) <= high:
             return int(choice)
-        print(f"Invalid choice. Please enter a number from {low} to {high}.")
+        screen.notice(f"Invalid choice. Please enter a number from {low} to {high}.", "error")
 
 
-def choose_wager():
+def choose_wager(balance=None):
     while True:
-        print("\nRoulette Wagers")
-        print("1. Single number (pays 35 to 1)")
-        print("2. Red (pays 1 to 1)")
-        print("3. Black (pays 1 to 1)")
-        print("4. Odd (pays 1 to 1)")
-        print("5. Even (pays 1 to 1)")
-        print("6. Low 1-18 (pays 1 to 1)")
-        print("7. High 19-36 (pays 1 to 1)")
-        print("8. Dozen (pays 2 to 1)")
-        print("9. Return to the garage")
-
+        screen.show("Roulette", balance, WAGER_MENU, at_table=True)
         choice = input("Choose a wager: ").strip()
 
         if choice == "1":
-            number = ask_number("Pick a number (0-36, or press Enter to go back): ", 0, 36)
+            number = ask_number(
+                "Pick a number (0-36, or press Enter to go back): ",
+                0,
+                36,
+                balance,
+                "Single number (pays 35 to 1)",
+            )
             if number is None:
                 continue
             return (f"Number {number}", {number}, 35)
@@ -55,7 +67,11 @@ def choose_wager():
             return OUTSIDE_WAGERS[choice]
         elif choice == "8":
             dozen = ask_number(
-                "Pick a dozen (1 = 1-12, 2 = 13-24, 3 = 25-36, or press Enter to go back): ", 1, 3
+                "Pick a dozen (1 = 1-12, 2 = 13-24, 3 = 25-36, or press Enter to go back): ",
+                1,
+                3,
+                balance,
+                "Dozen (pays 2 to 1)",
             )
             if dozen is None:
                 continue
@@ -64,7 +80,7 @@ def choose_wager():
         elif choice == "9":
             return None
         else:
-            print("Invalid choice. Please select 1 through 9.")
+            screen.notice("Invalid choice. Please select 1 through 9.", "error")
 
 
 def spin():
@@ -79,25 +95,22 @@ def resolve(wager, bet, number):
 
 
 def roulette(balance):
-    print("\nRoulette")
-
-    wager = choose_wager()
+    wager = choose_wager(balance)
     if wager is None:
         return None
 
-    bet = get_bet(balance)
+    name, _, payout = wager
+    bet = get_bet(balance, "Roulette", [f"Wager: {name} (pays {payout} to 1)"])
     if bet is None:
         return None
 
     number = spin()
     change = resolve(wager, bet, number)
-    print(f"\nYou bet ${bet} on {wager[0]}.")
-    print(f"The ball lands on {number} {color(number)}.")
+    landed = f"The ball lands on {number} {color(number)}."
     if change > 0:
-        print(f"You win ${change}!")
+        outcome, kind = f"{landed} You win ${change}!", "win"
     else:
-        print(f"You lose ${bet}.")
+        outcome, kind = f"{landed} You lose ${bet}.", "lose"
 
-    balance += change
-    print(f"New balance: ${balance}")
-    return balance
+    screen.record_round("Roulette", outcome, [f"Wager: ${bet} on {name}"], kind)
+    return balance + change
